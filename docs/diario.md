@@ -1,0 +1,1 @@
+- "O documento de requisitos encontra-se em sua versão inicial e será evoluído conforme novos requisitos forem descobertos."

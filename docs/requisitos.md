@@ -125,15 +125,81 @@ Comunicação automática gerada pelo sistema.
 
 # 6. Regras de Negócio
 
-- qualquer usuário pode criar uma demanda;
-- toda demanda nasce como Nova;
-- somente supervisores atribuem responsáveis;
-- somente supervisores alteram urgência;
-- somente responsáveis registram comentários;
-- somente responsáveis sinalizam conclusão;
-- somente supervisores encerram definitivamente uma demanda;
-- alterações estruturais geram histórico;
-- notificações são automáticas.
+## RN001
+
+Qualquer usuário autenticado pode criar demandas.
+
+---
+
+## RN002
+
+Toda demanda inicia no status Nova.
+
+---
+
+## RN003
+
+Toda demanda possui exatamente um criador.
+
+---
+
+## RN004
+
+Uma demanda possui no máximo um responsável ativo.
+
+---
+
+## RN005
+
+Somente supervisores alteram urgência.
+
+---
+
+## RN006
+
+Somente supervisores alteram responsável.
+
+---
+
+## RN007
+
+Somente responsáveis registram comentários.
+
+---
+
+## RN008
+
+Somente responsáveis sinalizam conclusão.
+
+---
+
+## RN009
+
+Somente supervisores encerram definitivamente uma demanda.
+
+---
+
+## RN010
+
+Toda alteração estrutural gera histórico.
+
+---
+
+## RN011
+
+Notificações são automáticas.
+
+---
+
+## RN012
+
+Todo usuário pertence a pelo menos uma área.
+
+---
+
+## RN013
+
+Toda demanda pertence a pelo menos uma área.
 
 ---
 
@@ -165,69 +231,151 @@ Arquivada
 
 # 8. Requisitos Funcionais
 
-## RF001
+## 8.1 Autenticação
 
-Cadastrar usuários.
+### RF001
 
----
-
-## RF002
-
-Cadastrar áreas.
+Autenticar usuário.
 
 ---
 
-## RF003
+### RF002
+
+Encerrar sessão.
+
+---
+
+## 8.2 Usuários
+
+### RF003
+
+Cadastrar usuário.
+
+---
+
+### RF004
+
+Editar usuário.
+
+---
+
+### RF005
+
+Desativar usuário.
+
+---
+
+## 8.3 Áreas
+
+### RF006
+
+Cadastrar área.
+
+---
+
+### RF007
+
+Editar área.
+
+---
+
+## 8.4 Demandas
+
+### RF008
 
 Criar demanda.
 
 ---
 
-## RF004
+### RF009
 
 Editar demanda.
 
 ---
 
-## RF005
+### RF010
 
-Atribuir responsável.
-
----
-
-## RF006
-
-Atualizar andamento.
+Atualizar responsável.
 
 ---
 
-## RF007
+### RF011
 
-Registrar comentários.
-
----
-
-## RF008
-
-Visualizar histórico.
+Alterar urgência.
 
 ---
 
-## RF009
+### RF012
 
-Receber notificações.
+Alterar status.
 
 ---
 
-## RF010
+### RF013
 
 Arquivar demanda.
 
 ---
 
-## RF011
+## 8.5 Comentários
 
-Consultar indicadores.
+### RF014
+
+Registrar comentário.
+
+---
+
+### RF015
+
+Consultar comentários.
+
+---
+
+## 8.6 Histórico
+
+### RF016
+
+Registrar histórico.
+
+---
+
+### RF017
+
+Consultar histórico.
+
+---
+
+## 8.7 Observadores
+
+### RF018
+
+Adicionar observador.
+
+---
+
+### RF019
+
+Remover observador.
+
+---
+
+### RF020
+
+Gerenciar notificações.
+
+---
+
+## 8.8 Indicadores
+
+### RF021
+
+Consultar painel.
+
+---
+
+### RF022
+
+Consultar métricas.
 
 ---
 
@@ -269,7 +417,61 @@ Consultar painel.
 
 ---
 
-# 11. Restrições
+# 11. Princípios do Produto
+
+O desenvolvimento do Pager seguirá os seguintes princípios:
+
+- Operação em primeiro lugar.
+
+O sistema deve priorizar rapidez e eficiência operacional em detrimento de funcionalidades secundárias.
+
+- Simplicidade de uso.
+
+As tarefas mais frequentes devem exigir o menor número possível de interações.
+
+- Informação atualizada.
+
+Os usuários devem visualizar o estado mais recente da operação, minimizando atrasos na comunicação.
+
+- Rastreabilidade.
+
+Toda ação relevante realizada no sistema deve ser passível de auditoria.
+
+- Consistência.
+
+A informação deve existir em um único local, evitando duplicidade de registros.
+
+- Evolução incremental.
+
+Novas funcionalidades deverão preservar compatibilidade com o modelo de domínio existente sempre que possível.
+
+---
+
+# 12. Premissas Operacionais
+
+O Pager foi concebido considerando as seguintes premissas:
+
+- O sistema será utilizado durante a execução de eventos presenciais.
+
+- Todos os usuários serão previamente cadastrados.
+
+- Todo usuário pertence a uma ou mais áreas.
+
+- Toda demanda possui exatamente um criador.
+
+- Uma demanda pode possuir apenas um responsável ativo por vez.
+
+- A supervisão possui visão completa da operação.
+
+- Atualizações operacionais serão registradas pelos responsáveis.
+
+- Demandas permanecem disponíveis para consulta mesmo após arquivadas.
+
+- O sistema deve permanecer operacional durante todo o período do evento.
+
+---
+
+# 13. Restrições
 
 - somente usuários autenticados podem utilizar o sistema;
 - toda demanda pertence a pelo menos uma área;
@@ -278,7 +480,7 @@ Consultar painel.
 
 ---
 
-# 12. Fora do Escopo
+# 14. Fora do Escopo
 
 Nesta versão inicial não fazem parte do sistema:
 
@@ -293,7 +495,7 @@ Nesta versão inicial não fazem parte do sistema:
 
 ---
 
-# 13. Evoluções Futuras
+# 15. Evoluções Futuras
 
 O projeto poderá incorporar futuramente:
 
