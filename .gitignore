@@ -1,3 +1,14 @@
+# Dependency locks (opcional)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Vite
+vite.config.ts.timestamp-*
+
+# NestJS
+*.tsbuildinfo
+
 # Logs
 logs
 *.log
