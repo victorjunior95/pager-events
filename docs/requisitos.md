@@ -2,7 +2,7 @@
 
 **Projeto:** Pager  
 **Versão:** 1.0  
-**Status:** Em elaboração
+**Status:** Em evolução
 
 ---
 
