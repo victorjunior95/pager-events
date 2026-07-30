@@ -64,6 +64,8 @@ Documentar a primeira versão dos requisitos do Pager.
 
 O documento de requisitos encontra-se em sua versão inicial e será evoluído conforme novos requisitos forem descobertos.
 
+---
+
 ## 2026-07-30
 
 ### Consolidação da Documentação Estruturante
@@ -99,3 +101,29 @@ Com essa etapa concluída, encerra-se a Fundação Documental do projeto e inici
 #### Observações
 
 A partir desta etapa, a evolução do projeto passa a ser orientada pelo roadmap e conduzida conforme o workflow oficial, registrando no diário apenas implementações efetivamente concluídas.
+
+### Fundação Técnica — Infraestrutura Base
+
+#### Objetivo
+
+Preparar a infraestrutura inicial necessária para suportar o desenvolvimento e a execução integrada da aplicação.
+
+#### Implementações
+
+- criação do arquivo `.gitignore`;
+- definição do arquivo `.env.example`;
+- implementação do `docker-compose.yml`;
+- definição da estrutura do diretório `docker/`;
+- criação dos Dockerfiles iniciais do Backend e do Frontend;
+- definição da estratégia de containerização utilizando Docker Compose;
+- definição da infraestrutura de desenvolvimento baseada em PostgreSQL, Backend e Frontend.
+
+#### Resultado
+
+O projeto passa a possuir uma infraestrutura inicial padronizada para desenvolvimento local.
+
+A organização dos containers, variáveis de ambiente, volumes, rede e estrutura de containerização encontra-se preparada para receber a implementação da aplicação.
+
+#### Observações
+
+Os Dockerfiles representam a configuração inicial do ambiente de desenvolvimento e serão evoluídos juntamente com os projetos Backend e Frontend.

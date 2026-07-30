@@ -75,13 +75,13 @@ Preparar a infraestrutura inicial da aplicação.
 
 #### Escopo
 
-* Docker Compose;
-* estrutura do Backend (NestJS);
-* estrutura do Frontend (React);
-* PostgreSQL;
-* Prisma ORM;
-* configuração inicial do ambiente;
-* primeira execução integrada da aplicação.
+* ✅ Docker Compose;
+* ⏳ estrutura do Backend (NestJS);
+* ⏳ estrutura do Frontend (React);
+* ⏳ PostgreSQL;
+* ⏳ Prisma ORM;
+* ✅ configuração inicial do ambiente;
+* ⏳ primeira execução integrada da aplicação.
 
 #### Status
 
