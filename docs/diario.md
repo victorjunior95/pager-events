@@ -127,3 +127,57 @@ A organização dos containers, variáveis de ambiente, volumes, rede e estrutur
 #### Observações
 
 Os Dockerfiles representam a configuração inicial do ambiente de desenvolvimento e serão evoluídos juntamente com os projetos Backend e Frontend.
+
+---
+
+## 2026-08-18
+
+### Fundação Técnica — Aplicações e Persistência
+
+#### Objetivo
+
+Concluir a Fundação Técnica do Pager, disponibilizando as aplicações Backend e Frontend e preparando a camada de persistência para os próximos blocos de desenvolvimento.
+
+#### Implementações
+
+- inicialização da aplicação Backend utilizando NestJS;
+- adoção da estrutura orientada ao domínio no Backend;
+- criação da estrutura inicial de `modules`, `common`, `config` e `shared`;
+- criação do módulo inicial `System`;
+- implementação do endpoint `GET /api`;
+- inicialização da aplicação Frontend utilizando React, Vite e TypeScript;
+- definição da estrutura inicial de diretórios do Frontend;
+- configuração da comunicação HTTP por meio do Axios;
+- configuração do `ConfigModule` no Backend;
+- configuração do `ValidationPipe` global;
+- configuração do CORS;
+- definição do prefixo global `/api`;
+- instalação e configuração das dependências `class-validator` e `class-transformer`;
+- instalação e configuração do Prisma ORM;
+- configuração do PostgreSQL como datasource;
+- adoção da configuração moderna do Prisma por meio de `prisma.config.ts`;
+- configuração do Prisma Client com geração em `src/generated/prisma`;
+- configuração do Prisma Client para CommonJS;
+- configuração do `PrismaPg` como adapter PostgreSQL;
+- criação do `PrismaModule`;
+- criação do `PrismaService`;
+- integração do `PrismaModule` ao `AppModule`;
+- validação da inicialização integrada de Frontend, Backend, PostgreSQL e Prisma.
+
+#### Resultado
+
+A Fundação Técnica do Pager foi concluída.
+
+O projeto possui uma infraestrutura Docker funcional, aplicações Backend e Frontend executáveis, PostgreSQL configurado e camada de persistência preparada para receber os primeiros modelos do domínio.
+
+A aplicação Backend inicia corretamente e disponibiliza o endpoint inicial `/api`.
+
+A camada Prisma encontra-se integrada ao NestJS e ao PostgreSQL, sem modelos de domínio definidos nesta etapa.
+
+#### Observações
+
+Durante a implementação da camada de persistência foi necessária uma adequação à configuração atual do Prisma, incluindo `prisma.config.ts`, driver adapter PostgreSQL e configuração do Prisma Client para CommonJS.
+
+Nenhuma migration de domínio foi criada nesta etapa, pois os modelos persistentes ainda não foram definidos.
+
+Com a conclusão da Fundação Técnica, o próximo ciclo de desenvolvimento será iniciado pelo Bloco 1 — Autenticação.
