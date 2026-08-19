@@ -181,3 +181,51 @@ Durante a implementação da camada de persistência foi necessária uma adequa�
 Nenhuma migration de domínio foi criada nesta etapa, pois os modelos persistentes ainda não foram definidos.
 
 Com a conclusão da Fundação Técnica, o próximo ciclo de desenvolvimento será iniciado pelo Bloco 1 — Autenticação.
+
+### Bloco 1 — Autenticação e Autorização
+
+#### BL-01.1 a BL-01.4 — Conclusão
+
+##### Objetivo
+
+Implementar e validar a primeira vertical de segurança do Pager, abrangendo persistência de usuários, autenticação JWT e autorização baseada em papéis.
+
+##### Implementações
+
+- definição dos papéis `STAFF`, `MANAGER` e `ADMIN`;
+- definição e persistência do modelo `User`;
+- criação da migration inicial;
+- criação da estrutura do `AuthModule`;
+- implementação da autenticação por email e senha;
+- utilização do Argon2 para hash e verificação de senhas;
+- configuração centralizada do JWT;
+- implementação da `JwtStrategy`;
+- implementação do `JwtAuthGuard`;
+- implementação do `Roles` decorator;
+- implementação do `RolesGuard`;
+- implementação do endpoint `POST /api/auth/login`;
+- implementação do endpoint protegido `GET /api/auth/me`;
+- implementação do endpoint protegido de validação administrativa;
+- implementação do bootstrap do primeiro usuário `ADMIN`;
+- implementação de seed idempotente.
+
+##### Validação
+
+Foram validados:
+
+- validação dos dados de login;
+- rejeição de credenciais inválidas;
+- criação do usuário `ADMIN`;
+- comportamento idempotente do seed;
+- rejeição de acesso sem JWT;
+- emissão de JWT após autenticação válida;
+- acesso a rota protegida com JWT válido;
+- autorização de acesso conforme o papel `ADMIN`.
+
+##### Resultado
+
+O Bloco 1 — Autenticação e Autorização foi concluído.
+
+O Pager possui agora autenticação baseada em JWT e autorização baseada em RBAC, com separação entre autenticação (`401 Unauthorized`) e autorização (`403 Forbidden`).
+
+A validação específica dos papéis `STAFF` e `MANAGER` será realizada posteriormente, quando o módulo de administração de usuários estiver implementado.

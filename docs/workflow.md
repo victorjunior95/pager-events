@@ -209,3 +209,95 @@ Isso complementa o roadmap.md.
 O workflow definido neste documento poderá ser revisado sempre que forem identificadas oportunidades de melhoria no processo de desenvolvimento.
 
 Alterações significativas deverão ser registradas neste documento antes de sua adoção.
+
+---
+
+## 2026-08-19
+
+### Bloco 1 — Autenticação e Autorização
+
+#### BL-01.1 — Modelagem de identidade e persistência
+
+##### Objetivo
+
+Preparar o modelo persistente necessário para autenticação e autorização.
+
+##### Implementações
+
+- definição dos papéis `STAFF`, `MANAGER` e `ADMIN`;
+- definição do modelo `User`;
+- criação dos campos relacionados à identidade, credenciais e estado do usuário;
+- criação do enum `UserRole`;
+- implementação do `schema.prisma`;
+- criação da migration inicial;
+- integração do Prisma ao modelo de autenticação.
+
+##### Resultado
+
+O banco de dados passou a possuir a estrutura persistente necessária para usuários e papéis da aplicação.
+
+---
+
+#### BL-01.2 — Estrutura inicial do AuthModule
+
+##### Objetivo
+
+Preparar a estrutura modular responsável pela autenticação.
+
+##### Implementações
+
+- criação do `AuthModule`;
+- criação do `AuthService`;
+- criação do `LoginDto`;
+- criação da estrutura de controllers, DTOs, services e strategies;
+- instalação das dependências relacionadas à autenticação;
+- configuração do Argon2;
+- preparação da integração com JWT.
+
+##### Resultado
+
+O Backend passou a possuir a estrutura modular necessária para implementar o fluxo de autenticação.
+
+---
+
+#### BL-01.3 — Autenticação JWT
+
+##### Objetivo
+
+Implementar e validar o fluxo completo de autenticação baseado em JWT.
+
+##### Implementações
+
+- validação de credenciais utilizando Prisma;
+- hash e verificação de senhas utilizando Argon2;
+- configuração centralizada do JWT;
+- implementação da `JwtStrategy`;
+- implementação do `JwtAuthGuard`;
+- implementação do endpoint `POST /api/auth/login`;
+- implementação do bootstrap do primeiro usuário `ADMIN`;
+- implementação de seed idempotente;
+- implementação do endpoint protegido `GET /api/auth/me`.
+
+##### Validação
+
+Foram realizados testes de:
+
+- validação do tamanho mínimo da senha no `LoginDto`;
+- rejeição de credenciais inválidas;
+- criação do usuário `ADMIN`;
+- execução idempotente do seed;
+- rejeição de acesso à rota protegida sem JWT;
+- autenticação válida e emissão de `accessToken`;
+- acesso à rota protegida utilizando JWT válido.
+
+##### Resultado
+
+O fluxo de autenticação encontra-se funcional de ponta a ponta:
+
+`credenciais → validação → Prisma → Argon2 → JWT → JwtAuthGuard → JwtStrategy → usuário autenticado`.
+
+##### Observações
+
+Durante a implementação do bootstrap administrativo foi necessário recriar os containers utilizando `docker compose down` seguido de `docker compose up`, para que as novas variáveis de ambiente fossem incorporadas ao container Backend.
+
+O mecanismo de autorização RBAC ainda não foi implementado e permanece como o próximo incremento do Bloco 1.

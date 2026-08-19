@@ -89,7 +89,7 @@ Preparar a infraestrutura inicial da aplicação.
 
 ---
 
-## Bloco 1 — Autenticação
+## Bloco 1 — Autenticação e Autorização
 
 ### Objetivo
 
@@ -106,9 +106,102 @@ Implementar autenticação e autorização da aplicação.
 
 Bloco 0 concluído.
 
-### Status
+---
 
-🟡 Próximo
+### BL-01.1 — Modelagem de identidade e persistência
+
+**Objetivo**
+
+Preparar o modelo persistente necessário para autenticação.
+
+**Entregas**
+
+* definição dos papéis `STAFF`, `MANAGER` e `ADMIN`;
+* definição do modelo `User`;
+* definição dos campos de autenticação e estado do usuário;
+* definição do enum `UserRole`;
+* criação da migration inicial;
+* integração do modelo com Prisma.
+
+**Status:** 🟢 Concluído
+
+---
+
+### BL-01.2 — Estrutura inicial do AuthModule
+
+**Objetivo**
+
+Criar a estrutura modular necessária para implementar autenticação.
+
+**Entregas**
+
+* criação do `AuthModule`;
+* criação do `AuthService`;
+* criação do `LoginDto`;
+* preparação da estrutura de controllers, DTOs, services e strategies;
+* instalação e configuração das dependências de autenticação;
+* configuração do Argon2;
+* configuração inicial do JWT.
+
+**Status:** 🟢 Concluído
+
+---
+
+### BL-01.3 — Autenticação JWT
+
+**Objetivo**
+
+Implementar e validar o fluxo completo de autenticação por JWT.
+
+**Entregas**
+
+* validação de credenciais;
+* hash e verificação de senhas com Argon2;
+* configuração centralizada do JWT;
+* `JwtStrategy`;
+* `JwtAuthGuard`;
+* `POST /api/auth/login`;
+* bootstrap do primeiro usuário `ADMIN`;
+* seed idempotente;
+* `GET /api/auth/me`;
+* proteção de rota por JWT.
+
+**Status:** 🟢 Concluído
+
+---
+
+### BL-01.4 — Autorização RBAC
+
+**Objetivo**
+
+Implementar autorização baseada nos papéis definidos para o sistema.
+
+**Entregas**
+
+* `STAFF`;
+* `MANAGER`;
+* `ADMIN`;
+* decorator de roles;
+* `RolesGuard`;
+* proteção de endpoints por papel;
+* diferenciação entre `401 Unauthorized` e `403 Forbidden`.
+
+**Status:** 🟢 Concluído
+
+---
+
+**Validação**
+
+* decorator `@Roles()` implementado;
+* `RolesGuard` implementado;
+* proteção de endpoint por JWT + role implementada;
+* acesso sem JWT validado como `401 Unauthorized`;
+* acesso com JWT válido e papel autorizado validado com sucesso;
+* diferenciação entre autenticação e autorização validada.
+
+### Status do Bloco
+
+🟢 Concluído
 
 ---
 

@@ -4,6 +4,9 @@ import type { Request } from 'express';
 import { LoginDto } from '../dto/login.dto';
 import { AuthService } from '../services/auth.service';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { RolesGuard } from '../guards/roles.guard';
+import { Roles } from '../decorators/roles.decorator';
+import { UserRole } from '../../../generated/prisma/enums';
 
 @Controller('auth')
 export class AuthController {
@@ -18,5 +21,14 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   me(@Req() request: Request) {
     return request.user;
+  }
+
+  @Get('admin-check')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  adminCheck() {
+    return {
+      authorized: true,
+    };
   }
 }
