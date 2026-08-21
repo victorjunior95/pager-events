@@ -265,9 +265,13 @@ A autorização será implementada utilizando RBAC (Role-Based Access Control).
 
 Papéis previstos:
 
-* Staff
-* Responsável
-* Supervisor
+* `STAFF` (Staff)
+* `MANAGER` (Responsável)
+* `ADMIN` (Supervisor)
+
+A administração de usuários será restrita ao papel `ADMIN`.
+
+A alteração de papel de usuários também será restrita ao `ADMIN`.
 
 Todas as validações de autorização ocorrerão exclusivamente no Backend.
 

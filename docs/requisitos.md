@@ -48,13 +48,17 @@ O sistema contempla:
 
 # 4. Atores
 
-## Staff
+## Staff/`STAFF`
+
+Usuário operacional.
 
 Responsável pela criação de demandas.
 
 ---
 
-## Responsável
+## Responsável/`MANAGER`
+
+Usuário com atribuições de supervisão.
 
 Executa a demanda atribuída.
 
@@ -64,7 +68,9 @@ Registra comentários.
 
 ---
 
-## Supervisor
+## Supervisor/`ADMIN`
+
+Usuário com atribuições administrativas.
 
 Coordena toda a operação.
 
@@ -200,6 +206,102 @@ Todo usuário pertence a pelo menos uma área.
 ## RN013
 
 Toda demanda pertence a pelo menos uma área.
+
+---
+
+## RN014
+
+Somente usuários com papel `ADMIN` podem cadastrar usuários;
+
+---
+
+## RN015
+
+Somente usuários com papel `ADMIN` podem editar usuários;
+
+---
+
+## RN016
+
+Somente usuários com papel `ADMIN` podem desativar usuários;
+
+---
+
+## RN017
+
+Somente usuários com papel `ADMIN` podem alterar o papel de outro usuário;
+
+---
+
+## RN018
+
+O papel do próprio usuário não pode ser alterado pelo próprio usuário;
+
+---
+
+## RN019
+
+O email do usuário é imutável após o cadastro;
+
+---
+
+## RN020
+
+O próprio usuário pode alterar seu nome;
+
+---
+
+## RN021
+
+O próprio usuário pode alterar sua senha;
+
+---
+
+## RN022
+
+O próprio usuário não pode alterar suas áreas;
+
+---
+
+## RN023
+
+Todo usuário deve possuir pelo menos uma área;
+
+---
+
+## RN024
+
+Um usuário pode estar associado a múltiplas áreas;
+
+---
+
+## RN025
+
+A associação entre usuários e áreas é persistente;
+
+---
+
+## RN026
+
+A desativação de um usuário é lógica, não física;
+
+---
+
+## RN027
+
+Usuários desativados não podem realizar autenticação;
+
+---
+
+## RN028
+
+A tentativa de autenticação de um usuário desativado deve informar que o usuário não está ativo e orientá-lo a procurar um administrador caso tenha dúvidas.
+
+---
+
+## RN029
+
+Um `ADMIN` não pode ser desativado quando ele for o único administrador ativo do sistema.
 
 ---
 
