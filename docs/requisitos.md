@@ -97,6 +97,14 @@ Exemplos:
 - Segurança
 - Recepção
 
+### Tipos de Área
+
+As áreas do Pager são classificadas em três tipos:
+
+- `SETOR`: representa uma unidade ou setor operacional;
+- `LOCAL`: representa uma localização física ou espaço do evento;
+- `EQUIPE`: representa um agrupamento operacional de pessoas.
+
 ---
 
 ## Demanda
