@@ -297,7 +297,26 @@ Implementar as operações administrativas sobre usuários.
 * desativação;
 * proteção do último `ADMIN` ativo.
 
-**Status:** 🟡 Próximo
+**Status:** 🟡 Em andamento
+
+#### BL-02.4.1 — Cadastro de usuário
+
+**Objetivo**
+
+Implementar o cadastro administrativo de usuários.
+
+**Entregas**
+
+* endpoint `POST /api/users`;
+* validação dos dados cadastrais;
+* validação de email único;
+* hash de senha com Argon2;
+* associação obrigatória a uma ou mais áreas;
+* criação transacional de usuário e associações;
+* resposta sem exposição do `passwordHash`;
+* proteção por JWT e RBAC.
+
+**Status:** 🟢 Concluído
 
 ---
 

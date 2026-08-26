@@ -321,3 +321,39 @@ A estrutura inicial do `UsersModule` foi concluída.
 O módulo encontra-se preparado para receber as operações administrativas de usuários no `BL-02.4`.
 
 A implementação de CRUD e das regras de negócio permanece deliberadamente fora deste incremento.
+
+---
+
+### BL-02.4.1 — Cadastro de usuário
+
+#### Objetivo
+
+Implementar o primeiro fluxo funcional da administração de usuários.
+
+#### Implementações
+
+- implementação do cadastro administrativo através de `POST /api/users`;
+- inclusão de `areaIds` no `CreateUserDto`;
+- validação de pelo menos uma área;
+- validação de existência das áreas informadas;
+- validação de email único;
+- geração de hash de senha com Argon2;
+- criação transacional de `User` e `UserArea`;
+- retorno do usuário sem exposição do `passwordHash`;
+- proteção do endpoint por JWT e RBAC, restrita ao papel `ADMIN`.
+
+#### Validação
+
+- cadastro válido realizado com sucesso;
+- duplicidade de email rejeitada com `409 Conflict`;
+- cadastro sem área rejeitado com `400 Bad Request`;
+- área inexistente rejeitada com `400 Bad Request`;
+- associação `teste@pager.local → Produção / SETOR` confirmada no PostgreSQL;
+- hash Argon2 confirmado no armazenamento;
+- `passwordHash` não exposto na resposta da API.
+
+#### Resultado
+
+O primeiro fluxo funcional de administração de usuários foi concluído com sucesso.
+
+O próximo incremento deverá implementar a consulta e listagem de usuários.

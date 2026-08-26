@@ -1,4 +1,12 @@
-import { IsEmail, IsEnum, IsString, MinLength } from 'class-validator';
+import {
+  ArrayMinSize,
+  IsArray,
+  IsEmail,
+  IsEnum,
+  IsString,
+  IsUUID,
+  MinLength,
+} from 'class-validator';
 
 import { UserRole } from '../../../generated/prisma/client';
 
@@ -16,4 +24,9 @@ export class CreateUserDto {
 
   @IsEnum(UserRole)
   role!: UserRole;
+
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsUUID('4', { each: true })
+  areaIds!: string[];
 }
