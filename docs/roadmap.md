@@ -276,7 +276,7 @@ Criar a estrutura modular responsável pela administração de usuários.
 * integração com `PrismaService`;
 * proteção inicial por `ADMIN`.
 
-**Status:** 🟡 Próximo
+**Status:** 🟢 Concluído
 
 ---
 
@@ -297,7 +297,7 @@ Implementar as operações administrativas sobre usuários.
 * desativação;
 * proteção do último `ADMIN` ativo.
 
-**Status:** ⚪ Não iniciado
+**Status:** 🟡 Próximo
 
 ---
 

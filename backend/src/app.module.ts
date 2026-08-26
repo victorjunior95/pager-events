@@ -5,6 +5,7 @@ import authConfig from './config/auth.config';
 import { AuthModule } from './modules/auth/auth.module';
 import { SystemModule } from './modules/system/system.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { PrismaModule } from './prisma/prisma.module';
     PrismaModule,
     SystemModule,
     AuthModule,
+    UsersModule,
   ],
   controllers: [],
   providers: [],

@@ -288,3 +288,36 @@ O Backend permaneceu funcional após a implementação.
 ##### Resultado
 
 O bootstrap administrativo inicial foi concluído e o usuário `ADMIN` encontra-se associado à área operacional `Produção`.
+
+---
+
+### BL-02.3 — Estrutura do UsersModule
+
+#### Objetivo
+
+Criar a estrutura modular responsável pela administração de usuários.
+
+#### Implementações
+
+- criação do `UsersModule`;
+- criação do `UsersController`;
+- criação do `UsersService`;
+- criação dos DTOs `CreateUserDto` e `UpdateUserDto`;
+- integração do `UsersModule` com `PrismaModule`;
+- registro do `UsersModule` no `AppModule`;
+- configuração inicial de proteção do controller por `JwtAuthGuard` e `RolesGuard`;
+- restrição inicial do módulo ao papel `ADMIN`.
+
+#### Validação
+
+- compilação TypeScript validada sem erros;
+- ESLint validado sem erros;
+- Backend inicializado corretamente após a inclusão do módulo.
+
+#### Resultado
+
+A estrutura inicial do `UsersModule` foi concluída.
+
+O módulo encontra-se preparado para receber as operações administrativas de usuários no `BL-02.4`.
+
+A implementação de CRUD e das regras de negócio permanece deliberadamente fora deste incremento.
