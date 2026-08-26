@@ -318,6 +318,34 @@ Implementar o cadastro administrativo de usuários.
 
 **Status:** 🟢 Concluído
 
+#### BL-02.4.2 — Listagem e consulta de usuários
+
+**Objetivo**
+
+Implementar a visualização administrativa dos usuários cadastrados.
+
+**Entregas**
+
+* endpoint `GET /api/users`;
+* endpoint `GET /api/users/:id`;
+* listagem ordenada por nome;
+* consulta individual por identificador;
+* inclusão das áreas associadas;
+* exclusão do `passwordHash` das respostas;
+* retorno `404 Not Found` para usuário inexistente;
+* proteção por JWT e RBAC.
+
+**Validação**
+
+* listagem de usuários validada com sucesso;
+* consulta individual validada com sucesso;
+* áreas associadas retornadas corretamente;
+* `passwordHash` não exposto;
+* usuário inexistente validado como `404 Not Found`;
+* acesso sem JWT validado como `401 Unauthorized`.
+
+**Status:** 🟢 Concluído
+
 ---
 
 ### BL-02.5 — Administração de Áreas

@@ -357,3 +357,43 @@ Implementar o primeiro fluxo funcional da administração de usuários.
 O primeiro fluxo funcional de administração de usuários foi concluído com sucesso.
 
 O próximo incremento deverá implementar a consulta e listagem de usuários.
+
+---
+
+## BL-02.4.2 — Listagem e consulta de usuários
+
+### Objetivo
+
+Implementar a visualização administrativa dos usuários cadastrados, incluindo suas áreas associadas, sem exposição de informações sensíveis.
+
+### Implementação
+
+Foram implementados:
+
+* `GET /api/users`;
+* `GET /api/users/:id`;
+* consulta de usuários por meio do `UsersService`;
+* retorno das áreas associadas através da relação `UserArea`;
+* seleção explícita dos campos públicos do usuário;
+* exclusão do `passwordHash` das respostas;
+* tratamento de usuário inexistente com `404 Not Found`;
+* proteção dos endpoints por `JwtAuthGuard` e `RolesGuard`;
+* restrição de acesso ao papel `ADMIN`.
+
+### Validação
+
+A listagem retornou corretamente os usuários existentes e suas respectivas áreas.
+
+A consulta individual retornou corretamente o usuário `teste@pager.local`, associado à área `Produção` (`SETOR`).
+
+A consulta de identificador inexistente retornou:
+
+`404 Not Found`
+
+Usuário não encontrado.
+
+O acesso sem autenticação retornou:
+
+`401 Unauthorized`
+
+Também foi verificado que as respostas não expõem o campo `passwordHash`.
