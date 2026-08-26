@@ -220,9 +220,129 @@ Implementar os módulos administrativos do sistema.
 
 Bloco 1.
 
-### Status
+---
 
-⚪ Não iniciado
+### BL-02.1 — Modelagem de Usuários e Áreas
+
+**Objetivo**
+
+Consolidar o modelo persistente necessário para administração de usuários e organização por áreas.
+
+**Entregas**
+
+* modelo `User`;
+* papéis `STAFF`, `MANAGER` e `ADMIN`;
+* modelo `Area`;
+* tipos `SETOR`, `LOCAL` e `EQUIPE`;
+* relacionamento N:N entre `User` e `Area`;
+* modelo associativo `UserArea`;
+* migration inicial;
+* validação da estrutura persistente.
+
+**Status:** 🟢 Concluído
+
+---
+
+### BL-02.2 — Bootstrap Administrativo
+
+**Objetivo**
+
+Garantir a existência e a configuração inicial do administrador do sistema.
+
+**Entregas**
+
+* seed idempotente do `ADMIN`;
+* criação/reutilização da área `Produção` do tipo `SETOR`;
+* associação do `ADMIN` à área `Produção`;
+* validação da idempotência do seed;
+* validação da associação persistida.
+
+**Status:** 🟢 Concluído
+
+---
+
+### BL-02.3 — Estrutura do UsersModule
+
+**Objetivo**
+
+Criar a estrutura modular responsável pela administração de usuários.
+
+**Entregas**
+
+* `UsersModule`;
+* `UsersController`;
+* `UsersService`;
+* DTOs de usuários;
+* integração com `PrismaService`;
+* proteção inicial por `ADMIN`.
+
+**Status:** 🟡 Próximo
+
+---
+
+### BL-02.4 — Administração de Usuários
+
+**Objetivo**
+
+Implementar as operações administrativas sobre usuários.
+
+**Entregas**
+
+* cadastro;
+* listagem;
+* consulta;
+* edição;
+* alteração de role;
+* associação com áreas;
+* desativação;
+* proteção do último `ADMIN` ativo.
+
+**Status:** ⚪ Não iniciado
+
+---
+
+### BL-02.5 — Administração de Áreas
+
+**Objetivo**
+
+Implementar o gerenciamento das áreas operacionais.
+
+**Entregas**
+
+* cadastro;
+* listagem;
+* consulta;
+* edição;
+* gerenciamento dos tipos de área;
+* associação de usuários às áreas.
+
+**Status:** ⚪ Não iniciado
+
+---
+
+### BL-02.6 — Validação da Administração
+
+**Objetivo**
+
+Validar as funcionalidades administrativas e suas regras de autorização.
+
+**Entregas**
+
+* validação de acesso por `ADMIN`;
+* validação de acesso negado a `STAFF`;
+* validação de acesso negado a `MANAGER`;
+* validação das operações de usuários;
+* validação das operações de áreas;
+* validação da proteção do último `ADMIN` ativo;
+* validação dos fluxos de erro.
+
+**Status:** ⚪ Não iniciado
+
+---
+
+### Status do Bloco
+
+🟡 Em andamento
 
 ---
 

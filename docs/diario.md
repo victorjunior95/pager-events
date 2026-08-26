@@ -229,3 +229,62 @@ O Bloco 1 — Autenticação e Autorização foi concluído.
 O Pager possui agora autenticação baseada em JWT e autorização baseada em RBAC, com separação entre autenticação (`401 Unauthorized`) e autorização (`403 Forbidden`).
 
 A validação específica dos papéis `STAFF` e `MANAGER` será realizada posteriormente, quando o módulo de administração de usuários estiver implementado.
+
+---
+
+## 2026-08-26
+
+### Bloco 2 — Administração
+
+#### BL-02.1 — Modelagem de Usuários e Áreas
+
+##### Objetivo
+
+Consolidar o modelo persistente necessário para administração de usuários e organização por áreas.
+
+##### Implementações
+
+- consolidação do modelo `User`;
+- consolidação dos papéis `STAFF`, `MANAGER` e `ADMIN`;
+- consolidação do modelo `Area`;
+- definição dos tipos `SETOR`, `LOCAL` e `EQUIPE`;
+- consolidação da relação N:N entre usuários e áreas;
+- utilização do modelo associativo `UserArea`;
+- validação da migration inicial;
+- validação da sincronização do schema Prisma com PostgreSQL.
+
+##### Resultado
+
+A estrutura persistente necessária para usuários e áreas foi validada.
+
+O PostgreSQL possui as tabelas `users`, `areas` e `user_areas`, e o Prisma confirmou que o banco encontra-se sincronizado com o schema.
+
+---
+
+#### BL-02.2 — Bootstrap Administrativo
+
+##### Objetivo
+
+Garantir a configuração inicial do administrador do sistema.
+
+##### Implementações
+
+- evolução do `seed-admin.ts`;
+- criação idempotente da área `Produção` do tipo `SETOR`;
+- associação do usuário `ADMIN` à área `Produção`;
+- manutenção da idempotência do bootstrap;
+- validação da associação no PostgreSQL.
+
+##### Validação
+
+Foram realizadas duas execuções consecutivas do seed sem duplicação de usuário, área ou associação.
+
+A associação final validada foi:
+
+`admin@pager.local → ADMIN → Produção / SETOR`
+
+O Backend permaneceu funcional após a implementação.
+
+##### Resultado
+
+O bootstrap administrativo inicial foi concluído e o usuário `ADMIN` encontra-se associado à área operacional `Produção`.

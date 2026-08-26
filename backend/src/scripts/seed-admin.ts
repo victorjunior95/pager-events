@@ -34,30 +34,61 @@ async function main() {
   });
 
   try {
-    const existingUser = await prisma.user.findUnique({
+    const productionArea = await prisma.area.upsert({
+      where: {
+        name_type: {
+          name: 'Produção',
+          type: 'SETOR',
+        },
+      },
+      update: {},
+      create: {
+        name: 'Produção',
+        type: 'SETOR',
+      },
+    });
+
+    let user = await prisma.user.findUnique({
       where: {
         email,
       },
     });
 
-    if (existingUser) {
-      console.log(`User ${email} already exists. Nothing to do.`);
-      return;
+    if (!user) {
+      const passwordHash = await argon2.hash(password);
+
+      user = await prisma.user.create({
+        data: {
+          name,
+          email,
+          passwordHash,
+          role: 'ADMIN',
+          active: true,
+        },
+      });
+
+      console.log(`Admin user created: ${user.email}`);
+    } else {
+      console.log(`User ${email} already exists.`);
     }
 
-    const passwordHash = await argon2.hash(password);
-
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        passwordHash,
-        role: 'ADMIN',
-        active: true,
+    await prisma.userArea.upsert({
+      where: {
+        userId_areaId: {
+          userId: user.id,
+          areaId: productionArea.id,
+        },
+      },
+      update: {},
+      create: {
+        userId: user.id,
+        areaId: productionArea.id,
       },
     });
 
-    console.log(`Admin user created: ${user.email}`);
+    console.log(
+      `Admin user ${user.email} is associated with area ${productionArea.name}.`,
+    );
   } finally {
     await prisma.$disconnect();
   }
