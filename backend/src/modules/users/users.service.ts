@@ -9,6 +9,8 @@ import * as argon2 from 'argon2';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { Prisma } from '../../generated/prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -146,6 +148,83 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException('Usuário não encontrado.');
     }
+
+    return user;
+  }
+
+  async update(id: string, dto: UpdateUserDto) {
+    const existingUser = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!existingUser) {
+      throw new NotFoundException('Usuário não encontrado.');
+    }
+
+    if (dto.areaIds !== undefined) {
+      if (dto.areaIds.length === 0) {
+        throw new BadRequestException(
+          'O usuário deve estar associado a pelo menos uma área.',
+        );
+      }
+
+      const areasCount = await this.prisma.area.count({
+        where: {
+          id: {
+            in: dto.areaIds,
+          },
+        },
+      });
+
+      if (areasCount !== dto.areaIds.length) {
+        throw new BadRequestException(
+          'Uma ou mais áreas informadas não existem.',
+        );
+      }
+    }
+
+    const data: Prisma.UserUpdateInput = {
+      ...(dto.name !== undefined && { name: dto.name }),
+      ...(dto.role !== undefined && { role: dto.role }),
+    };
+
+    if (dto.password !== undefined) {
+      data.passwordHash = await argon2.hash(dto.password);
+    }
+
+    const user = await this.prisma.$transaction(async (tx) => {
+      if (dto.areaIds !== undefined) {
+        await tx.userArea.deleteMany({
+          where: { userId: id },
+        });
+
+        await tx.userArea.createMany({
+          data: dto.areaIds.map((areaId) => ({
+            userId: id,
+            areaId,
+          })),
+        });
+      }
+
+      return tx.user.update({
+        where: { id },
+        data,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          active: true,
+          createdAt: true,
+          updatedAt: true,
+          areas: {
+            include: {
+              area: true,
+            },
+          },
+        },
+      });
+    });
 
     return user;
   }
