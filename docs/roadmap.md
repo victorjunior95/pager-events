@@ -346,6 +346,42 @@ Implementar a visualização administrativa dos usuários cadastrados.
 
 **Status:** 🟢 Concluído
 
+#### BL-02.4.3 — Edição de usuário
+
+**Objetivo**
+
+Implementar a edição administrativa dos dados permitidos de usuários, incluindo nome, senha, role e associação com áreas.
+
+**Entregas**
+
+* edição do nome;
+* alteração de senha;
+* alteração de role;
+* atualização das áreas associadas;
+* manutenção do email como atributo imutável;
+* validação de existência das áreas informadas;
+* exigência de pelo menos uma área;
+* proteção por JWT e RBAC;
+* restrição das operações administrativas ao papel `ADMIN`.
+
+**Validação**
+
+* alteração de nome validada com sucesso;
+* alteração de senha validada com sucesso;
+* tentativa de alteração de email rejeitada;
+* alteração de role validada com sucesso;
+* área inexistente rejeitada;
+* lista de áreas vazia rejeitada;
+* usuário inexistente validado como `404 Not Found`;
+* acesso sem autenticação validado como `401 Unauthorized`;
+* acesso por `STAFF`/`MANAGER` validado como `403 Forbidden`.
+
+**Observação**
+
+A substituição efetiva da associação por uma área diferente não foi validada neste incremento por ainda existir apenas uma área disponível no ambiente de teste. A regra de associação foi, entretanto, validada por meio dos cenários de área inexistente e lista vazia.
+
+**Status:** 🟢 Concluído
+
 ---
 
 ### BL-02.5 — Administração de Áreas

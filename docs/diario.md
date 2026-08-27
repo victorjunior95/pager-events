@@ -397,3 +397,51 @@ O acesso sem autenticação retornou:
 `401 Unauthorized`
 
 Também foi verificado que as respostas não expõem o campo `passwordHash`.
+
+---
+
+### BL-02.4.3 — Edição de usuário
+
+#### Objetivo
+
+Implementar a edição administrativa dos usuários, respeitando as regras de imutabilidade do email, alteração de credenciais, mudança de role e associação obrigatória com áreas.
+
+#### Implementações
+
+- implementação da edição administrativa de usuários;
+- alteração do nome;
+- alteração da senha com novo hash utilizando Argon2;
+- alteração de `role`;
+- atualização das associações com áreas;
+- manutenção do email como atributo imutável;
+- validação da existência das áreas informadas;
+- validação de pelo menos uma área associada ao usuário;
+- tratamento de usuário inexistente;
+- proteção dos endpoints por JWT e RBAC;
+- restrição das operações administrativas ao papel `ADMIN`.
+
+#### Validação
+
+Foram validados:
+
+- alteração de nome realizada com sucesso;
+- alteração de senha realizada com sucesso;
+- tentativa de alteração de email rejeitada com `400 Bad Request`;
+- alteração de `STAFF` para `MANAGER` realizada com sucesso;
+- tentativa de associação com área inexistente rejeitada com `400 Bad Request`;
+- tentativa de remover todas as áreas rejeitada com `400 Bad Request`;
+- usuário inexistente retornando `404 Not Found`;
+- acesso sem autenticação retornando `401 Unauthorized`;
+- tentativa de edição por `STAFF`/`MANAGER` retornando `403 Forbidden`.
+
+A substituição efetiva das áreas por uma área diferente não foi executada porque o ambiente de teste possuía somente a área `Produção`. A regra de associação obrigatória e a validação de existência das áreas foram validadas.
+
+#### Resultado
+
+O BL-02.4.3 foi concluído com sucesso.
+
+O Pager permite agora a edição administrativa dos dados permitidos de usuários, mantendo o email imutável e exigindo que cada usuário permaneça associado a pelo menos uma área.
+
+A alteração de `role` permanece sob responsabilidade exclusiva do `ADMIN`, conforme as regras de negócio definidas para o Bloco 2.
+
+O próximo incremento será responsável pela desativação de usuários, incluindo a regra de proteção do último `ADMIN` ativo.
