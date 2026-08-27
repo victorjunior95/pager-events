@@ -445,3 +445,71 @@ O Pager permite agora a edição administrativa dos dados permitidos de usuário
 A alteração de `role` permanece sob responsabilidade exclusiva do `ADMIN`, conforme as regras de negócio definidas para o Bloco 2.
 
 O próximo incremento será responsável pela desativação de usuários, incluindo a regra de proteção do último `ADMIN` ativo.
+
+---
+
+## 2026-08-27
+
+### BL-02.4.4 — Desativação de usuário
+
+#### Objetivo
+
+Implementar a desativação lógica de usuários, preservando seus registros e associações, impedindo o acesso de usuários inativos e protegendo o último `ADMIN` ativo.
+
+#### Implementações
+
+- implementação do fluxo administrativo de desativação de usuários;
+- desativação lógica por meio do campo `active`;
+- preservação do registro do usuário após a desativação;
+- preservação das associações existentes com áreas;
+- tratamento de usuário já desativado;
+- tratamento de usuário inexistente;
+- proteção do endpoint por JWT e RBAC;
+- restrição da operação ao papel `ADMIN`;
+- implementação da regra que impede a desativação do último `ADMIN` ativo.
+
+#### Validação
+
+Foi realizada a desativação do usuário `teste@pager.local`, que passou de `active = true` para `active = false`.
+
+A persistência da alteração foi confirmada diretamente no PostgreSQL:
+
+`teste@pager.local → MANAGER → active = false`
+
+A tentativa de desativar novamente o mesmo usuário retornou:
+
+`409 Conflict`
+
+Usuário já desativado.
+
+A tentativa de desativar um usuário inexistente retornou:
+
+`404 Not Found`
+
+Usuário não encontrado.
+
+O acesso ao endpoint sem autenticação retornou:
+
+`401 Unauthorized`
+
+Também foi validada a regra crítica de proteção do último `ADMIN` ativo. A tentativa de desativar o único administrador ativo retornou:
+
+`409 Conflict`
+
+Não é possível desativar o último administrador ativo.
+
+O usuário `admin@pager.local` permaneceu ativo após a tentativa.
+
+O teste específico de um usuário `STAFF`/`MANAGER` tentando executar a operação não foi realizado, pois o ambiente de teste não possuía outro usuário apropriado para esse cenário. A proteção por RBAC já havia sido validada nos incrementos anteriores do `UsersModule`.
+
+#### Resultado
+
+O BL-02.4.4 foi concluído com sucesso.
+
+O Pager possui agora desativação lógica de usuários, preservando seus dados e associações e impedindo o acesso de usuários desativados.
+
+A regra de proteção do último `ADMIN` ativo também foi implementada e validada.
+
+Com a conclusão do BL-02.4.4, todas as operações previstas para a administração de usuários no BL-02.4 foram implementadas.
+
+O próximo incremento deverá tratar a validação consolidada da administração e suas regras de autorização, conforme previsto no BL-02.6.

@@ -10,7 +10,7 @@ import * as argon2 from 'argon2';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { Prisma } from '../../generated/prisma/client';
+import { Prisma, UserRole } from '../../generated/prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -227,5 +227,55 @@ export class UsersService {
     });
 
     return user;
+  }
+
+  async deactivate(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado.');
+    }
+
+    if (!user.active) {
+      throw new ConflictException('O usuário já está desativado.');
+    }
+
+    if (user.role === UserRole.ADMIN) {
+      const activeAdmins = await this.prisma.user.count({
+        where: {
+          role: UserRole.ADMIN,
+          active: true,
+        },
+      });
+
+      if (activeAdmins === 1) {
+        throw new ConflictException(
+          'Não é possível desativar o último administrador ativo.',
+        );
+      }
+    }
+
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        active: false,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        active: true,
+        createdAt: true,
+        updatedAt: true,
+        areas: {
+          include: {
+            area: true,
+          },
+        },
+      },
+    });
   }
 }

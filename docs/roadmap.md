@@ -297,7 +297,7 @@ Implementar as operações administrativas sobre usuários.
 * desativação;
 * proteção do último `ADMIN` ativo.
 
-**Status:** 🟡 Em andamento
+**Status:** 🟢 Concluído
 
 #### BL-02.4.1 — Cadastro de usuário
 
@@ -379,6 +379,36 @@ Implementar a edição administrativa dos dados permitidos de usuários, incluin
 **Observação**
 
 A substituição efetiva da associação por uma área diferente não foi validada neste incremento por ainda existir apenas uma área disponível no ambiente de teste. A regra de associação foi, entretanto, validada por meio dos cenários de área inexistente e lista vazia.
+
+**Status:** 🟢 Concluído
+
+#### BL-02.4.4 — Desativação de usuário
+
+**Objetivo**
+
+Implementar a desativação lógica de usuários, preservando seus registros e impedindo o acesso de usuários inativos, sem permitir a remoção do último `ADMIN` ativo.
+
+**Entregas**
+
+* endpoint de desativação de usuário;
+* desativação lógica por meio do campo `active`;
+* preservação dos dados e associações do usuário;
+* rejeição da desativação de usuário já desativado;
+* tratamento de usuário inexistente;
+* proteção por JWT e RBAC;
+* restrição da operação ao papel `ADMIN`;
+* proteção do último `ADMIN` ativo.
+
+**Validação**
+
+* desativação de usuário validada com sucesso;
+* persistência de `active = false` confirmada no PostgreSQL;
+* tentativa de desativação de usuário já desativado validada como `409 Conflict`;
+* usuário inexistente validado como `404 Not Found`;
+* acesso sem autenticação validado como `401 Unauthorized`;
+* tentativa de desativação do último `ADMIN` ativo validada como `409 Conflict`;
+* usuário `ADMIN` permaneceu ativo após a tentativa protegida;
+* teste específico de `STAFF`/`MANAGER` não executado por ausência de usuário apropriado no ambiente de teste.
 
 **Status:** 🟢 Concluído
 
