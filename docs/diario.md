@@ -513,3 +513,142 @@ A regra de proteção do último `ADMIN` ativo também foi implementada e valida
 Com a conclusão do BL-02.4.4, todas as operações previstas para a administração de usuários no BL-02.4 foram implementadas.
 
 O próximo incremento deverá tratar a validação consolidada da administração e suas regras de autorização, conforme previsto no BL-02.6.
+
+---
+
+### BL-02.5 — Administração de Áreas
+
+#### BL-02.5.1 — Estrutura do AreasModule
+
+##### Objetivo
+
+Criar a estrutura modular responsável pela administração de áreas.
+
+##### Implementações
+
+* criação do `AreasModule`;
+* criação do `AreasController`;
+* criação do `AreasService`;
+* integração com `PrismaModule`;
+* registro do `AreasModule` no `AppModule`;
+* proteção inicial do controller por `JwtAuthGuard` e `RolesGuard`.
+
+##### Validação
+
+* compilação TypeScript validada sem erros;
+* ESLint validado sem erros;
+* inicialização do `AreasModule` confirmada pelos logs do Backend;
+* demais módulos permaneceram funcionais.
+
+##### Resultado
+
+A estrutura inicial do `AreasModule` foi concluída e o módulo encontra-se preparado para receber as operações administrativas de áreas.
+
+---
+
+#### BL-02.5.2 — Cadastro de área
+
+##### Objetivo
+
+Implementar o cadastro administrativo de áreas operacionais.
+
+##### Implementações
+
+* criação do `CreateAreaDto`;
+* implementação do endpoint `POST /api/areas`;
+* validação do nome da área;
+* validação do tipo por meio do enum `AreaType`;
+* suporte aos tipos `SETOR`, `LOCAL` e `EQUIPE`;
+* validação da combinação única `name + type`;
+* tratamento de duplicidade com `409 Conflict`;
+* proteção por JWT e RBAC.
+
+##### Validação
+
+Foram cadastradas com sucesso áreas dos três tipos:
+
+* `Operação` — `SETOR`;
+* `Evento` — `LOCAL`;
+* `Equipe Técnica` — `EQUIPE`.
+
+Também foram validados:
+
+* conflito de área com a mesma combinação `name + type`;
+* rejeição de tipo inválido;
+* rejeição de nome ausente ou vazio;
+* rejeição de requisição sem autenticação.
+
+##### Resultado
+
+O cadastro administrativo de áreas foi concluído e validado com sucesso.
+
+---
+
+#### BL-02.5.3 — Listagem e consulta de áreas
+
+##### Objetivo
+
+Implementar a visualização administrativa das áreas cadastradas.
+
+##### Implementações
+
+* implementação do endpoint `GET /api/areas`;
+* implementação do endpoint `GET /api/areas/:id`;
+* ordenação da listagem por tipo e nome;
+* tratamento de área inexistente com `404 Not Found`;
+* proteção dos endpoints por JWT e RBAC.
+
+##### Validação
+
+A listagem retornou corretamente as áreas cadastradas, respeitando a ordenação definida.
+
+A consulta individual retornou corretamente a área `Operação`.
+
+A consulta de identificador inexistente retornou `404 Not Found`.
+
+O acesso sem autenticação retornou `401 Unauthorized`.
+
+##### Resultado
+
+A listagem e a consulta individual de áreas foram concluídas e validadas com sucesso.
+
+---
+
+#### BL-02.5.4 — Edição de área
+
+##### Objetivo
+
+Implementar a edição administrativa das áreas, preservando a unicidade da combinação `name + type` e os tipos permitidos.
+
+##### Implementações
+
+* criação do `UpdateAreaDto`;
+* implementação do endpoint `PATCH /api/areas/:id`;
+* alteração de nome;
+* alteração de tipo;
+* alteração simultânea de nome e tipo;
+* validação de conflito na combinação `name + type`;
+* tratamento de área inexistente;
+* rejeição de requisição sem campos alteráveis;
+* proteção por JWT e RBAC.
+
+##### Validação
+
+Foram validados com sucesso:
+
+* alteração somente do nome;
+* alteração somente do tipo;
+* alteração simultânea de nome e tipo;
+* rejeição de combinação `name + type` já existente com `409 Conflict`;
+* área inexistente com `404 Not Found`;
+* corpo vazio com `400 Bad Request`;
+* tipo inválido com `400 Bad Request`;
+* acesso sem autenticação com `401 Unauthorized`.
+
+##### Resultado
+
+O BL-02.5.4 foi concluído com sucesso.
+
+O módulo de áreas possui agora cadastro, listagem, consulta e edição funcionais, mantendo as regras de validação e autorização estabelecidas.
+
+A associação entre usuários e áreas permanece como próximo incremento funcional do `BL-02.5`.

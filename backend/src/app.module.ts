@@ -6,6 +6,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { SystemModule } from './modules/system/system.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './modules/users/users.module';
+import { AreasModule } from './modules/areas/areas.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { UsersModule } from './modules/users/users.module';
     SystemModule,
     AuthModule,
     UsersModule,
+    AreasModule,
   ],
   controllers: [],
   providers: [],

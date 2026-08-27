@@ -429,7 +429,115 @@ Implementar o gerenciamento das áreas operacionais.
 * gerenciamento dos tipos de área;
 * associação de usuários às áreas.
 
-**Status:** ⚪ Não iniciado
+**Status:** 🟡 Em andamento
+
+#### BL-02.5.1 — Estrutura do AreasModule
+
+**Objetivo**
+
+Criar a estrutura modular responsável pela administração de áreas.
+
+**Entregas**
+
+* `AreasModule`;
+* `AreasController`;
+* `AreasService`;
+* integração com `PrismaModule`;
+* registro do módulo no `AppModule`;
+* proteção inicial por `JwtAuthGuard` e `RolesGuard`.
+
+**Validação**
+
+* compilação TypeScript validada sem erros;
+* ESLint validado sem erros;
+* inicialização do `AreasModule` confirmada pelo Backend;
+* integração com os demais módulos preservada.
+
+Status: 🟢 Concluído
+
+#### BL-02.5.2 — Cadastro de área
+
+**Objetivo**
+
+Implementar o cadastro administrativo de áreas operacionais.
+
+**Entregas**
+
+* endpoint `POST /api/areas`;
+* criação de áreas dos tipos `SETOR`, `LOCAL` e `EQUIPE`;
+* validação obrigatória do nome;
+* validação do tipo de área;
+* validação de unicidade da combinação `name + type`;
+* tratamento de conflito com `409 Conflict`;
+* proteção por JWT e RBAC.
+
+**Validação**
+
+* cadastro de área `SETOR` validado com sucesso;
+* cadastro de área `LOCAL` validado com sucesso;
+* cadastro de área `EQUIPE` validado com sucesso;
+* duplicidade de `name + type` rejeitada com `409 Conflict`;
+* combinação de mesmo nome com tipo diferente permitida;
+* nome ausente ou vazio rejeitado com `400 Bad Request`;
+* tipo inválido rejeitado com `400 Bad Request`;
+* acesso sem autenticação rejeitado com `401 Unauthorized`.
+
+Status: 🟢 Concluído
+
+#### BL-02.5.3 — Listagem e consulta de áreas
+
+**Objetivo**
+
+Implementar a visualização administrativa das áreas cadastradas.
+
+**Entregas**
+
+* endpoint `GET /api/areas`;
+* endpoint `GET /api/areas/:id`;
+* listagem ordenada por tipo e nome;
+* consulta individual por identificador;
+* tratamento de área inexistente com `404 Not Found`;
+* proteção por JWT e RBAC.
+
+**Validação**
+
+* listagem das áreas existentes validada com sucesso;
+* ordenação por tipo e nome validada;
+* consulta individual validada com sucesso;
+* área inexistente validada como `404 Not Found`;
+* acesso sem autenticação validado como `401 Unauthorized`.
+
+Status: 🟢 Concluído
+
+#### BL-02.5.4 — Edição de área
+
+**Objetivo**
+
+Implementar a edição administrativa das áreas, preservando as regras de unicidade e os tipos permitidos.
+
+**Entregas**
+
+* endpoint `PATCH /api/areas/:id`;
+* alteração de nome;
+* alteração de tipo;
+* alteração simultânea de nome e tipo;
+* validação de unicidade da combinação `name + type`;
+* tratamento de área inexistente;
+* rejeição de corpo sem campos alteráveis;
+* proteção por JWT e RBAC.
+
+**Validação**
+
+* alteração somente do nome validada com sucesso;
+* alteração somente do tipo validada com sucesso;
+* alteração de nome e tipo simultaneamente validada com sucesso;
+* conflito de `name + type` validado como `409 Conflict`;
+* área inexistente validada como `404 Not Found`;
+* corpo vazio validado como `400 Bad Request`;
+* tipo inválido validado como `400 Bad Request`;
+* acesso sem autenticação validado como `401 Unauthorized`.
+
+Status: 🟢 Concluído
 
 ---
 
