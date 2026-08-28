@@ -726,3 +726,52 @@ Essa alteração preserva o status HTTP de não autorizado, mas fornece ao clien
 As duas inconsistências identificadas durante a validação integrada foram corrigidas e validadas com sucesso.
 
 O Bloco 2 permanece em andamento, com o `BL-02.6 — Validação da Administração` ainda pendente de conclusão integral dos cenários previstos.
+
+## Validação de autorização e autenticação do Bloco 2
+
+### Incremento validado
+
+Concluída a validação das regras de autenticação e autorização relacionadas ao módulo de áreas e às operações administrativas de usuários.
+
+### Áreas
+
+Foi validada a proteção do `AreasController` com `JwtAuthGuard` e `RolesGuard`, aplicando `@Roles(UserRole.ADMIN)` em nível de classe.
+
+A validação confirmou que:
+
+* `ADMIN` consegue listar e consultar áreas;
+* requisições sem JWT retornam `401 Unauthorized`;
+* `STAFF` recebe `403 Forbidden` ao:
+
+  * listar áreas;
+  * consultar área;
+  * criar área;
+  * alterar área.
+
+A aplicação da regra em nível de classe foi mantida, pois todas as operações atualmente expostas pelo `AreasController` são administrativas e devem permanecer restritas a `ADMIN`.
+
+### Usuário desativado
+
+Foi validada a tentativa de autenticação de usuário previamente desativado.
+
+O backend passou a retornar:
+
+`Usuário desativado. Procure o administrador caso tenha dúvidas.`
+
+com `401 Unauthorized`, diferenciando esse cenário de uma falha genérica de credenciais.
+
+### Proteção do último ADMIN
+
+Foi novamente validada a regra de negócio que impede a desativação do último administrador ativo.
+
+Resultado:
+
+`Não é possível desativar o último administrador ativo.`
+
+com `409 Conflict`.
+
+### Resultado
+
+Todos os testes previstos para esta etapa apresentaram o comportamento esperado.
+
+A implementação encontra-se funcional e validada, permanecendo o Bloco 2 em andamento para os próximos incrementos.
