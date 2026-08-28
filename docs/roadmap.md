@@ -594,6 +594,41 @@ A relação N:N entre usuários e áreas já estava implementada no modelo `User
 
 **Status:** 🟢 Concluído
 
+### BL-02 — Administração → usuários e áreas
+
+#### BL-02.4 — Usuários
+
+* **BL-02.4.1 — Estrutura e cadastro de usuários:** concluído.
+* **BL-02.4.2 — Listagem e consulta de usuários:** concluído.
+* **BL-02.4.3 — Edição de usuários:** concluído.
+* **BL-02.4.4 — Desativação de usuários:** concluído.
+
+Validações realizadas:
+
+* cadastro, consulta, edição e desativação de usuários;
+* associação N:N entre usuários e áreas;
+* restrição de operações administrativas de usuários a `ADMIN`;
+* proteção contra desativação do último `ADMIN` ativo;
+* comportamento específico para tentativa de autenticação de usuário desativado.
+
+#### BL-02.5 — Áreas
+
+* **BL-02.5.1 — Estrutura do módulo de áreas:** concluído.
+* **BL-02.5.2 — Cadastro de áreas:** concluído.
+* **BL-02.5.3 — Listagem e consulta de áreas:** concluído.
+* **BL-02.5.4 — Edição de áreas:** concluído.
+* **BL-02.5.5 — Proteção e autorização do módulo de áreas:** concluído.
+
+Validações realizadas:
+
+* `ADMIN` consegue listar e consultar áreas;
+* requisições sem autenticação são rejeitadas com `401 Unauthorized`;
+* usuários `STAFF` são rejeitados com `403 Forbidden` nas operações do módulo;
+* criação, consulta e alteração de áreas permanecem restritas a `ADMIN`;
+* proteção aplicada em nível de `AreasController`, abrangendo todas as rotas administrativas do módulo.
+
+**Status do Bloco 2:** em andamento, com os incrementos de usuários e áreas implementados e validados até esta etapa.
+
 ---
 
 ### BL-02.6 — Validação da Administração

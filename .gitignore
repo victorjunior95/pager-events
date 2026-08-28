@@ -44,6 +44,7 @@ backend/prisma/dev.db
 # Temporary
 tmp/
 temp/
+tests_returns.md
 
 # Cache
 .cache/
