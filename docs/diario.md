@@ -652,3 +652,43 @@ O BL-02.5.4 foi concluído com sucesso.
 O módulo de áreas possui agora cadastro, listagem, consulta e edição funcionais, mantendo as regras de validação e autorização estabelecidas.
 
 A associação entre usuários e áreas permanece como próximo incremento funcional do `BL-02.5`.
+
+#### BL-02.5.5 — Associação de usuários às áreas
+
+##### Objetivo
+
+Implementar a gestão das associações entre usuários e áreas, utilizando a relação N:N definida no modelo de persistência.
+
+##### Implementações
+
+* criação do `UpdateUserAreasDto`;
+* implementação do endpoint `PUT /api/users/:id/areas`;
+* substituição integral das associações existentes;
+* validação de existência do usuário;
+* validação de existência das áreas;
+* exigência de pelo menos uma área;
+* rejeição de associações duplicadas;
+* utilização de transação para atualização das associações;
+* proteção por JWT e RBAC;
+* restrição da operação ao papel `ADMIN`;
+* retorno do usuário com suas áreas sem exposição do `passwordHash`.
+
+##### Validação
+
+Foram validados com sucesso:
+
+* substituição da área associada ao usuário;
+* associação simultânea a duas áreas;
+* rejeição de lista vazia de áreas com `400 Bad Request`;
+* rejeição de identificadores inválidos com `400 Bad Request`;
+* rejeição de áreas inexistentes com `400 Bad Request`;
+* usuário inexistente com `404 Not Found`;
+* acesso sem autenticação com `401 Unauthorized`.
+
+O teste específico de acesso por `STAFF`/`MANAGER` não foi executado por ausência de outro usuário ativo apropriado no ambiente de teste.
+
+##### Resultado
+
+O BL-02.5.5 foi concluído com sucesso.
+
+A associação de usuários às áreas está funcional, utilizando a relação N:N persistida em `UserArea`, permitindo que um usuário pertença simultaneamente a múltiplas áreas e mantendo a exigência de pelo menos uma associação.

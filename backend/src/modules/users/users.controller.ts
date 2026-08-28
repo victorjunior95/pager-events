@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 
@@ -15,6 +16,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateUserAreasDto } from './dto/update-user-areas.dto';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -47,5 +49,11 @@ export class UsersController {
   @Roles(UserRole.ADMIN)
   deactivate(@Param('id') id: string) {
     return this.usersService.deactivate(id);
+  }
+
+  @Put(':id/areas')
+  @Roles(UserRole.ADMIN)
+  async updateAreas(@Param('id') id: string, @Body() dto: UpdateUserAreasDto) {
+    return this.usersService.updateAreas(id, dto.areaIds);
   }
 }

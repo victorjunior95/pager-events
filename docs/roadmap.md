@@ -539,6 +539,43 @@ Implementar a edição administrativa das áreas, preservando as regras de unici
 
 Status: 🟢 Concluído
 
+#### BL-02.5.5 — Associação de usuários às áreas
+
+**Objetivo**
+
+Implementar a gestão das associações entre usuários e áreas, utilizando a relação N:N definida no modelo de persistência.
+
+**Entregas**
+
+* criação do `UpdateUserAreasDto`;
+* implementação do endpoint `PUT /api/users/:id/areas`;
+* substituição integral das áreas associadas ao usuário;
+* validação de existência do usuário;
+* validação de existência das áreas informadas;
+* exigência de pelo menos uma área;
+* rejeição de áreas duplicadas;
+* operação transacional sobre `UserArea`;
+* proteção por JWT e RBAC;
+* restrição da operação ao papel `ADMIN`;
+* retorno do usuário com suas áreas sem exposição do `passwordHash`.
+
+**Validação**
+
+* substituição de uma área por outra validada com sucesso;
+* associação simultânea a múltiplas áreas validada com sucesso;
+* lista de áreas vazia validada como `400 Bad Request`;
+* UUID inválido validado como `400 Bad Request`;
+* área inexistente validada como `400 Bad Request`;
+* usuário inexistente validado como `404 Not Found`;
+* acesso sem autenticação validado como `401 Unauthorized`;
+* teste específico de `STAFF`/`MANAGER` não executado por ausência de usuário apropriado no ambiente de teste.
+
+**Observação**
+
+A relação N:N entre usuários e áreas já estava implementada no modelo `UserArea`, não sendo necessária nova migration para este incremento.
+
+**Status:** 🟢 Concluído
+
 ---
 
 ### BL-02.6 — Validação da Administração

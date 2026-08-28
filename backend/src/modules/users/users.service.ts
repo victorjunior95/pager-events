@@ -278,4 +278,53 @@ export class UsersService {
       },
     });
   }
+
+  async updateAreas(userId: string, areaIds: string[]) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado.');
+    }
+
+    const uniqueAreaIds = [...new Set(areaIds)];
+
+    if (uniqueAreaIds.length !== areaIds.length) {
+      throw new BadRequestException(
+        'Não é permitido informar uma área mais de uma vez.',
+      );
+    }
+
+    const areas = await this.prisma.area.findMany({
+      where: {
+        id: {
+          in: areaIds,
+        },
+      },
+    });
+
+    if (areas.length !== areaIds.length) {
+      throw new BadRequestException(
+        'Uma ou mais áreas informadas não existem.',
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.userArea.deleteMany({
+        where: {
+          userId,
+        },
+      });
+
+      await tx.userArea.createMany({
+        data: uniqueAreaIds.map((areaId) => ({
+          userId,
+          areaId,
+        })),
+      });
+    });
+
+    return this.findOne(userId);
+  }
 }
