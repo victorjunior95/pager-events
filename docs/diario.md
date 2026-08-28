@@ -692,3 +692,37 @@ O teste específico de acesso por `STAFF`/`MANAGER` não foi executado por ausê
 O BL-02.5.5 foi concluído com sucesso.
 
 A associação de usuários às áreas está funcional, utilizando a relação N:N persistida em `UserArea`, permitindo que um usuário pertença simultaneamente a múltiplas áreas e mantendo a exigência de pelo menos uma associação.
+
+## 2026-08-28
+
+### Ajustes de validação integrada — Bloco 2
+
+Durante a validação integrada das funcionalidades administrativas foram identificados dois comportamentos que exigiram correção.
+
+#### Proteção administrativa das áreas
+
+Foi identificado que o endpoint `GET /api/areas` possuía proteção por JWT e `RolesGuard`, porém não possuía uma role explicitamente definida.
+
+A regra foi corrigida com a aplicação de `@Roles(UserRole.ADMIN)` no `AreasController`, fazendo com que todas as rotas administrativas de áreas sejam acessíveis somente por usuários com papel `ADMIN`.
+
+A correção foi validada com um token `STAFF`, cujo acesso passou a retornar `403 Forbidden`.
+
+#### Diferenciação de usuário desativado
+
+Foi identificado que um usuário desativado, ao tentar realizar login com suas credenciais, recebia a mesma resposta utilizada para credenciais inválidas:
+
+`Credenciais inválidas.`
+
+O comportamento foi corrigido para identificar explicitamente a existência de uma conta desativada.
+
+A tentativa de login de usuário desativado passou a retornar `401 Unauthorized` com a mensagem:
+
+`Usuário desativado. Procure o administrador caso tenha dúvidas.`
+
+Essa alteração preserva o status HTTP de não autorizado, mas fornece ao cliente uma indicação precisa de que o bloqueio decorre da desativação da conta.
+
+#### Resultado
+
+As duas inconsistências identificadas durante a validação integrada foram corrigidas e validadas com sucesso.
+
+O Bloco 2 permanece em andamento, com o `BL-02.6 — Validação da Administração` ainda pendente de conclusão integral dos cenários previstos.

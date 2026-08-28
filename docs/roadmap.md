@@ -410,6 +410,16 @@ Implementar a desativação lógica de usuários, preservando seus registros e i
 * usuário `ADMIN` permaneceu ativo após a tentativa protegida;
 * teste específico de `STAFF`/`MANAGER` não executado por ausência de usuário apropriado no ambiente de teste.
 
+**Observação — comportamento de usuário desativado**
+
+Durante a validação integrada foi identificado que a tentativa de login de um usuário desativado retornava a mesma mensagem utilizada para credenciais inválidas.
+
+O comportamento foi corrigido para diferenciar explicitamente o estado de usuário desativado, retornando `401 Unauthorized` com a mensagem:
+
+`Usuário desativado. Procure o administrador caso tenha dúvidas.`
+
+Dessa forma, o fluxo de autenticação diferencia credenciais inválidas de uma conta existente, porém desativada.
+
 **Status:** 🟢 Concluído
 
 ---
@@ -507,6 +517,14 @@ Implementar a visualização administrativa das áreas cadastradas.
 * área inexistente validada como `404 Not Found`;
 * acesso sem autenticação validado como `401 Unauthorized`.
 
+**Observação — correção de autorização**
+
+Durante a validação integrada da administração foi identificado que o endpoint `GET /api/areas` estava protegido por JWT, porém sem restrição explícita de role.
+
+A regra foi corrigida com a aplicação de `@Roles(UserRole.ADMIN)` no `AreasController`, fazendo com que todas as operações administrativas de áreas sejam restritas ao papel `ADMIN`.
+
+A proteção foi validada com um token `STAFF`, que passou a retornar `403 Forbidden`.
+
 Status: 🟢 Concluído
 
 #### BL-02.5.4 — Edição de área
@@ -594,7 +612,7 @@ Validar as funcionalidades administrativas e suas regras de autorização.
 * validação da proteção do último `ADMIN` ativo;
 * validação dos fluxos de erro.
 
-**Status:** ⚪ Não iniciado
+**Status:** 🟡 Em andamento
 
 ---
 

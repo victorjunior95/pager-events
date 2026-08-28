@@ -18,8 +18,14 @@ export class AuthService {
       },
     });
 
-    if (!user || !user.active) {
+    if (!user) {
       throw new UnauthorizedException('Credenciais inválidas.');
+    }
+
+    if (!user.active) {
+      throw new UnauthorizedException(
+        'Usuário desativado. Procure o administrador caso tenha dúvidas.',
+      );
     }
 
     const passwordValid = await argon2.verify(user.passwordHash, password);
