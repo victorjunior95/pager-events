@@ -727,13 +727,13 @@ As duas inconsistências identificadas durante a validação integrada foram cor
 
 O Bloco 2 permanece em andamento, com o `BL-02.6 — Validação da Administração` ainda pendente de conclusão integral dos cenários previstos.
 
-## Validação de autorização e autenticação do Bloco 2
+### Validação de autorização e autenticação do Bloco 2
 
-### Incremento validado
+#### Incremento validado
 
 Concluída a validação das regras de autenticação e autorização relacionadas ao módulo de áreas e às operações administrativas de usuários.
 
-### Áreas
+#### Áreas
 
 Foi validada a proteção do `AreasController` com `JwtAuthGuard` e `RolesGuard`, aplicando `@Roles(UserRole.ADMIN)` em nível de classe.
 
@@ -750,7 +750,7 @@ A validação confirmou que:
 
 A aplicação da regra em nível de classe foi mantida, pois todas as operações atualmente expostas pelo `AreasController` são administrativas e devem permanecer restritas a `ADMIN`.
 
-### Usuário desativado
+#### Usuário desativado
 
 Foi validada a tentativa de autenticação de usuário previamente desativado.
 
@@ -760,7 +760,7 @@ O backend passou a retornar:
 
 com `401 Unauthorized`, diferenciando esse cenário de uma falha genérica de credenciais.
 
-### Proteção do último ADMIN
+#### Proteção do último ADMIN
 
 Foi novamente validada a regra de negócio que impede a desativação do último administrador ativo.
 
@@ -770,8 +770,127 @@ Resultado:
 
 com `409 Conflict`.
 
-### Resultado
+#### Resultado
 
 Todos os testes previstos para esta etapa apresentaram o comportamento esperado.
 
 A implementação encontra-se funcional e validada, permanecendo o Bloco 2 em andamento para os próximos incrementos.
+
+## 2026-08-31
+
+### BL-02.6 — Validação da Administração
+
+##### Objetivo
+
+Validar de forma integrada as funcionalidades administrativas implementadas nos módulos de usuários e áreas, incluindo autenticação, autorização por perfil, regras de negócio, relacionamentos N:N, desativação e tratamento dos principais fluxos de erro.
+
+##### Preparação do ambiente
+
+Foi preparado um ambiente de validação contendo:
+
+* usuário `ADMIN` ativo;
+* usuário `STAFF` ativo;
+* usuário `MANAGER` ativo;
+* usuário temporário `validacao@pager.local`;
+* usuário desativado para validação do bloqueio de login;
+* áreas `Produção`, `Evento`, `Equipe Técnica` e `Operação Externa`.
+
+O usuário temporário foi criado especificamente para os testes funcionais e posteriormente reutilizado nas validações de consulta, edição, associação de áreas e desativação.
+
+##### Validação de autorização
+
+Foram validados com sucesso:
+
+* `ADMIN` acessando usuários com `200 OK`;
+* `STAFF` tentando acessar usuários com `403 Forbidden`;
+* `MANAGER` tentando acessar usuários com `403 Forbidden`;
+* `ADMIN` acessando áreas com `200 OK`;
+* `STAFF` tentando acessar áreas com `403 Forbidden`;
+* `MANAGER` tentando acessar áreas com `403 Forbidden`;
+* requisições sem JWT retornando `401 Unauthorized`.
+
+A matriz de autorização prevista para as operações administrativas foi, portanto, confirmada no ambiente integrado.
+
+##### Validação das operações de usuários
+
+Foram validados com sucesso:
+
+* criação de usuário temporário com `201 Created`;
+* persistência do usuário e de sua associação com área;
+* armazenamento da senha como `passwordHash`;
+* rejeição de email duplicado com `409 Conflict`;
+* rejeição de cadastro sem áreas com `400 Bad Request`;
+* rejeição de área inexistente no cadastro com `400 Bad Request`;
+* validação completa do DTO com `400 Bad Request`;
+* listagem de usuários com `200 OK`;
+* consulta individual com `200 OK`;
+* usuário inexistente com `404 Not Found`;
+* consulta sem autenticação com `401 Unauthorized`;
+* alteração somente do nome com `200 OK`;
+* alteração somente da senha com `200 OK`;
+* rejeição da tentativa de alteração de email pelo DTO;
+* alteração de role com `200 OK`.
+
+As respostas administrativas também confirmaram que `passwordHash` não é exposto pela API.
+
+##### Validação da associação N:N entre usuários e áreas
+
+Foi validado o endpoint `PUT /api/users/:id/areas`.
+
+Foram confirmados com sucesso:
+
+* substituição de uma área por outra;
+* associação simultânea de duas áreas;
+* rejeição de lista vazia com `400 Bad Request`;
+* rejeição de UUID estruturalmente inválido com `400 Bad Request`;
+* rejeição de área inexistente utilizando UUID válido com `400 Bad Request`;
+* usuário inexistente com `404 Not Found`;
+* ausência de autenticação com `401 Unauthorized`;
+* tentativa de alteração por `STAFF` com `403 Forbidden`;
+* tentativa de alteração por `MANAGER` com `403 Forbidden`.
+
+O primeiro teste de área inexistente utilizou um UUID estruturalmente inválido e, por isso, foi corretamente interceptado pela validação do DTO. O teste foi repetido utilizando um UUID válido, mas inexistente no banco, confirmando então a regra de negócio esperada:
+
+`"Uma ou mais áreas informadas não existem."`
+
+A implementação utiliza a relação N:N `UserArea`, sem necessidade de nova migration.
+
+##### Validação de desativação
+
+Foi validada a desativação do usuário temporário com `200 OK`, mantendo suas associações de áreas.
+
+Em seguida, o login do usuário desativado foi tentado e retornou `401 Unauthorized` com a mensagem correspondente à situação de usuário desativado.
+
+Também foi validada a tentativa de desativar o único `ADMIN` ativo, que retornou `409 Conflict` com a proteção:
+
+`"Não é possível desativar o último administrador ativo."`
+
+##### Validação de fluxos de erro
+
+Foram validados adicionalmente:
+
+* atualização de usuário inexistente com `404 Not Found`;
+* desativação de usuário inexistente com `404 Not Found`;
+* alteração de áreas de usuário inexistente com `404 Not Found`.
+
+##### Fechamento técnico
+
+Após a conclusão dos testes funcionais:
+
+* `npm run build` foi executado com sucesso;
+* a execução inicial do ESLint identificou problemas no teste padrão `app.controller.spec.ts` e nos arquivos gerados pelo Prisma;
+* foi ajustado o `eslint.config.mjs` para ignorar `src/generated/prisma/**` e `**/*.spec.ts` no contexto da validação;
+* `npx eslint src` foi executado novamente e terminou com código de saída `0`;
+* `git diff --check` não apresentou problemas;
+* as alterações do ESLint foram versionadas no commit `24a6708` (`chore: ajustar lint do backend`);
+* o `git status` final confirmou working tree limpa.
+
+##### Resultado
+
+O `BL-02.6 — Validação da Administração` foi concluído com sucesso.
+
+As funcionalidades administrativas de usuários e áreas foram validadas em ambiente integrado, incluindo autorização por perfil, autenticação, regras de negócio, associação N:N, desativação, proteção do último `ADMIN` e principais fluxos de erro.
+
+Com o fechamento deste incremento, o `BL-02 — Administração` possui usuários e áreas implementados e validados, encerrando a etapa administrativa prevista no roadmap.
+
+O próximo ciclo deve avançar para o próximo bloco funcional do projeto, respeitando as dependências estabelecidas no roadmap.

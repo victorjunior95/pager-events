@@ -645,15 +645,68 @@ Validar as funcionalidades administrativas e suas regras de autorização.
 * validação das operações de usuários;
 * validação das operações de áreas;
 * validação da proteção do último `ADMIN` ativo;
-* validação dos fluxos de erro.
+* validação dos fluxos de erro;
+* validação técnica do backend após os incrementos administrativos.
 
-**Status:** 🟡 Em andamento
+**Validação**
+
+* `ADMIN` acessando usuários: `200 OK`;
+* `STAFF` acessando usuários: `403 Forbidden`;
+* `MANAGER` acessando usuários: `403 Forbidden`;
+* `ADMIN` acessando áreas: `200 OK`;
+* `STAFF` acessando áreas: `403 Forbidden`;
+* `MANAGER` acessando áreas: `403 Forbidden`;
+* requisições sem JWT: `401 Unauthorized`;
+* criação de usuário temporário: `201 Created`;
+* persistência do usuário e associação de área confirmadas;
+* duplicidade de email: `409 Conflict`;
+* cadastro sem áreas: `400 Bad Request`;
+* área inexistente no cadastro: `400 Bad Request`;
+* DTO inválido: `400 Bad Request`;
+* listagem de usuários: `200 OK`;
+* consulta individual: `200 OK`;
+* usuário inexistente: `404 Not Found`;
+* consulta sem autenticação: `401 Unauthorized`;
+* alteração de nome: `200 OK`;
+* alteração de senha: `200 OK`;
+* tentativa de alteração de email rejeitada pelo DTO: `400 Bad Request`;
+* alteração de role: `200 OK`;
+* substituição de áreas: `200 OK`;
+* associação de múltiplas áreas: `200 OK`;
+* lista de áreas vazia: `400 Bad Request`;
+* UUID de área inválido: `400 Bad Request`;
+* área inexistente com UUID válido: `400 Bad Request`;
+* alteração de áreas sem autenticação: `401 Unauthorized`;
+* alteração de áreas por `STAFF`: `403 Forbidden`;
+* alteração de áreas por `MANAGER`: `403 Forbidden`;
+* desativação de usuário: `200 OK`;
+* login de usuário desativado: `401 Unauthorized`;
+* tentativa de desativação do último `ADMIN` ativo: `409 Conflict`;
+* atualização de usuário inexistente: `404 Not Found`;
+* desativação de usuário inexistente: `404 Not Found`;
+* alteração de áreas de usuário inexistente: `404 Not Found`;
+* `npm run build`: concluído com sucesso;
+* `npx eslint src`: concluído com código de saída `0`;
+* `git diff --check`: concluído sem apontamentos;
+* working tree final limpo após o commit técnico.
+
+**Ajuste técnico identificado durante a validação**
+
+O lint inicialmente apontou problemas no teste padrão `app.controller.spec.ts` e nos arquivos gerados pelo Prisma. Como os arquivos `src/generated/prisma/**` são artefatos gerados e o teste padrão não fazia parte do escopo desta validação, o ESLint foi ajustado para ignorar esses caminhos.
+
+O ajuste foi versionado no commit:
+
+`24a6708 — chore: ajustar lint do backend`
+
+Após o ajuste, `npx eslint src` foi executado com sucesso (`ESLINT_EXIT_CODE=0`).
+
+**Status:** 🟢 Concluído
 
 ---
 
 ### Status do Bloco
 
-🟡 Em andamento
+🟢 Concluído
 
 ---
 
