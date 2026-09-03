@@ -894,3 +894,30 @@ As funcionalidades administrativas de usuários e áreas foram validadas em ambi
 Com o fechamento deste incremento, o `BL-02 — Administração` possui usuários e áreas implementados e validados, encerrando a etapa administrativa prevista no roadmap.
 
 O próximo ciclo deve avançar para o próximo bloco funcional do projeto, respeitando as dependências estabelecidas no roadmap.
+
+## 2026-09-03
+
+### Validação de autenticação e autorização do domínio de Demand
+
+Foi concluída a primeira etapa funcional do domínio de Demand, incluindo CRUD, fechamento e arquivamento.
+
+A demanda passou a exigir autenticação via JWT nos endpoints protegidos. A autorização foi integrada ao mecanismo de RBAC existente, utilizando os perfis `STAFF`, `MANAGER` e `ADMIN`.
+
+A matriz validada para o domínio ficou definida da seguinte forma:
+
+| Operação  | ADMIN | MANAGER | STAFF |
+| --------- | :---: | :-----: | :---: |
+| Listar    |   ✓   |    ✓    |   ✓   |
+| Consultar |   ✓   |    ✓    |   ✓   |
+| Criar     |   ✓   |    ✓    |   ✓   |
+| Atualizar |   ✓   |    ✓    |   ✓   |
+| Fechar    |   ✓   |    ✓    |   ✓   |
+| Arquivar  |   ✓   |    ✓    |   —   |
+
+Foram realizados testes com JWT válido e sem autenticação. Também foi validado especificamente o endpoint de arquivamento com os três perfis: `ADMIN` e `MANAGER` receberam `200 OK`, enquanto `STAFF` recebeu `403 Forbidden`.
+
+A implementação também mantém o identificador operacional sequencial das demandas (`DEM-000001`, `DEM-000002`), sem consumo da sequência nas operações de fechamento ou arquivamento.
+
+Com isso, fica encerrado o incremento de autenticação e autorização do domínio de Demand.
+
+**Próximo incremento:** definir e implementar as regras de ciclo de vida da demanda, especialmente as interações entre fechamento e arquivamento.

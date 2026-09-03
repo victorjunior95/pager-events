@@ -25,6 +25,14 @@ enum AreaType {
   EQUIPE
 }
 
+enum DemandUrgency {
+  NENHUMA
+  BAIXA
+  MÉDIA
+  ALTA
+  CRÍTICA
+}
+
 model User {
   id           String   @id @default(uuid())
   name         String
@@ -47,7 +55,8 @@ model Area {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users UserArea[]
+  users   UserArea[]
+  demands DemandArea[]
 
   @@unique([name, type])
   @@map("areas")
@@ -63,4 +72,48 @@ model UserArea {
   @@id([userId, areaId])
   @@index([areaId])
   @@map("user_areas")
+}
+
+model Demand {
+  id          String        @id @default(uuid())
+  code        String        @unique
+  title       String
+  description String?
+  urgency     DemandUrgency @default(NENHUMA)
+  dueAt       DateTime?
+  archived    Boolean       @default(false)
+  closedAt    DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  areas   DemandArea[]
+  history DemandHistory[]
+
+  @@index([urgency])
+  @@index([archived])
+  @@index([dueAt])
+  @@map("demands")
+}
+
+model DemandArea {
+  demandId String
+  areaId   String
+
+  demand Demand @relation(fields: [demandId], references: [id], onDelete: Cascade)
+  area   Area   @relation(fields: [areaId], references: [id], onDelete: Cascade)
+
+  @@id([demandId, areaId])
+  @@index([areaId])
+  @@map("demand_areas")
+}
+
+model DemandHistory {
+  id        String   @id @default(uuid())
+  demandId  String
+  createdAt DateTime @default(now())
+
+  demand Demand @relation(fields: [demandId], references: [id], onDelete: Cascade)
+
+  @@index([demandId, createdAt])
+  @@map("demand_history")
 }

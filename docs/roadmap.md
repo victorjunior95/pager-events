@@ -729,6 +729,24 @@ Implementar o núcleo operacional do Pager.
 
 Bloco 2.
 
+### Demand — CRUD, ciclo inicial e autorização
+
+* [x] Modelagem da entidade `Demand`
+* [x] Níveis de urgência: `NENHUMA`, `BAIXA`, `MÉDIA`, `ALTA` e `CRÍTICA`
+* [x] Identificador operacional sequencial no formato `DEM-000001`
+* [x] Relação entre demandas e áreas
+* [x] Estrutura inicial de histórico da demanda
+* [x] CRUD de demandas
+* [x] Fechamento de demanda
+* [x] Arquivamento de demanda
+* [x] Autenticação obrigatória nos endpoints de demanda
+* [x] Autorização por perfil para operações de demanda
+* [x] Validação de `STAFF`, `MANAGER` e `ADMIN` no arquivamento
+* [x] Validação de build e lint
+* [x] Validação funcional dos endpoints de demanda
+
+**Validação concluída:** CRUD, fechamento, arquivamento, autenticação e RBAC da primeira versão do domínio de Demand foram testados com sucesso. O arquivamento foi validado como permitido para `ADMIN` e `MANAGER` e bloqueado para `STAFF`.
+
 ### Status
 
 ⚪ Não iniciado
