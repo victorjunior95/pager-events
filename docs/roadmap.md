@@ -729,7 +729,7 @@ Implementar o núcleo operacional do Pager.
 
 Bloco 2.
 
-### Demand — CRUD, ciclo inicial e autorização
+### Demand — Núcleo inicial
 
 * [x] Modelagem da entidade `Demand`
 * [x] Níveis de urgência: `NENHUMA`, `BAIXA`, `MÉDIA`, `ALTA` e `CRÍTICA`
@@ -737,19 +737,46 @@ Bloco 2.
 * [x] Relação entre demandas e áreas
 * [x] Estrutura inicial de histórico da demanda
 * [x] CRUD de demandas
-* [x] Fechamento de demanda
-* [x] Arquivamento de demanda
+* [x] Validação de pelo menos uma área por demanda
+* [x] Validação de existência das áreas informadas
+* [x] Edição parcial de demanda
 * [x] Autenticação obrigatória nos endpoints de demanda
 * [x] Autorização por perfil para operações de demanda
+* [x] Fechamento de demanda
+* [x] Arquivamento de demanda
+* [x] Regras de ciclo de vida entre fechamento e arquivamento
 * [x] Validação de `STAFF`, `MANAGER` e `ADMIN` no arquivamento
 * [x] Validação de build e lint
-* [x] Validação funcional dos endpoints de demanda
+* [x] Validação funcional dos endpoints implementados
 
-**Validação concluída:** CRUD, fechamento, arquivamento, autenticação e RBAC da primeira versão do domínio de Demand foram testados com sucesso. O arquivamento foi validado como permitido para `ADMIN` e `MANAGER` e bloqueado para `STAFF`.
+### Regras de ciclo de vida validadas
 
-### Status
+* [x] demanda aberta pode ser fechada;
+* [x] demanda já fechada não pode ser fechada novamente;
+* [x] demanda fechada pode ser arquivada;
+* [x] demanda já arquivada não pode ser arquivada novamente;
+* [x] demanda arquivada não pode ser fechada;
+* [ ] comportamento de arquivamento de demanda ainda aberta.
 
-⚪ Não iniciado
+**Observação:** o cenário de arquivamento de uma demanda ainda aberta permanece pendente de validação, pois o ambiente de teste não possuía uma demanda aberta disponível para execução segura desse cenário.
+
+### Estado atual do domínio
+
+O núcleo inicial de Demand encontra-se implementado e validado, incluindo persistência, CRUD, associação com áreas, identificador sequencial, autenticação, autorização, fechamento e arquivamento.
+
+As regras de ciclo de vida entre fechamento e arquivamento encontram-se parcialmente validadas. O comportamento de arquivamento de demanda ainda aberta permanece deliberadamente pendente.
+
+### Próximos incrementos
+
+* [ ] definição e implementação da atribuição de responsável;
+* [ ] definição e implementação do andamento/status operacional;
+* [ ] consolidação das regras de alteração de urgência/prioridade;
+* [ ] integração do histórico com as alterações estruturais;
+* [ ] validação consolidada das novas regras do domínio.
+
+### Status do Bloco
+
+🟡 Em andamento
 
 ---
 

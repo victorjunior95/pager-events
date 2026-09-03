@@ -921,3 +921,145 @@ A implementação também mantém o identificador operacional sequencial das dem
 Com isso, fica encerrado o incremento de autenticação e autorização do domínio de Demand.
 
 **Próximo incremento:** definir e implementar as regras de ciclo de vida da demanda, especialmente as interações entre fechamento e arquivamento.
+
+### BL-03.1 — Núcleo inicial de Demand
+
+#### Objetivo
+
+Implementar o núcleo persistente e operacional inicial do domínio de Demand, preparando a entidade para criação, consulta, edição, associação com áreas e evolução posterior do ciclo de vida.
+
+#### Implementações
+
+* criação do modelo `Demand`;
+* definição dos níveis de urgência `NENHUMA`, `BAIXA`, `MÉDIA`, `ALTA` e `CRÍTICA`;
+* criação do identificador operacional sequencial no formato `DEM-000001`;
+* criação da sequência PostgreSQL `demand_code_seq`;
+* criação do modelo associativo `DemandArea`;
+* estabelecimento da relação N:N entre demandas e áreas;
+* criação da estrutura inicial `DemandHistory`;
+* criação do `DemandsModule`;
+* criação do `DemandsController`;
+* criação do `DemandsService`;
+* criação dos DTOs de criação e atualização;
+* implementação de `POST /api/demands`;
+* implementação de `GET /api/demands`;
+* implementação de `GET /api/demands/:id`;
+* implementação de `PATCH /api/demands/:id`;
+* validação das áreas associadas à demanda;
+* exigência de pelo menos uma área;
+* validação de existência das áreas informadas;
+* suporte à atualização parcial dos dados da demanda.
+
+#### Persistência
+
+Foram criadas as migrations:
+
+* `20260902172708_add_demands`;
+* `20260902181846_add_demand_code_sequence`.
+
+A sequência operacional foi implementada diretamente no PostgreSQL e utilizada para gerar códigos no padrão:
+
+`DEM-000001`
+
+`DEM-000002`
+
+#### Validação
+
+Foram validados:
+
+* criação de demandas com sucesso;
+* incremento sequencial dos códigos;
+* listagem das demandas;
+* consulta individual;
+* consulta de demanda inexistente com `404 Not Found`;
+* atualização parcial;
+* alteração de urgência;
+* alteração de descrição;
+* alteração de prazo;
+* alteração das áreas associadas;
+* rejeição de `areaIds` vazio com `400 Bad Request`;
+* rejeição de área inexistente com `400 Bad Request`;
+* preservação dos campos não enviados em atualização parcial;
+* persistência das alterações diretamente no PostgreSQL;
+* ausência de consumo da sequência nas operações de atualização.
+
+Também foi confirmado que a sequence permanece com o valor esperado após operações que não representam criação de demanda.
+
+#### Resultado
+
+O núcleo inicial de Demand foi implementado e validado.
+
+A entidade possui persistência própria, associação com áreas, identificador operacional sequencial, níveis de urgência, prazo, arquivamento, fechamento e estrutura inicial para histórico.
+
+O próximo incremento deverá consolidar as regras de ciclo de vida da demanda e sua autorização por perfil.
+
+### BL-03.2 — Regras de ciclo de vida da demanda
+
+#### Objetivo
+
+Consolidar as regras de negócio relacionadas ao fechamento e arquivamento de demandas, evitando transições inválidas no ciclo de vida operacional.
+
+#### Implementações
+
+Foram ajustados os métodos `close()` e `archive()` do `DemandsService` para validar o estado atual da demanda antes de executar a alteração.
+
+O fechamento passou a respeitar as seguintes regras:
+
+* demanda inexistente retorna `404 Not Found`;
+* demanda já fechada não pode ser fechada novamente;
+* demanda arquivada não pode ser fechada;
+* uma demanda aberta pode ser fechada;
+* o fechamento registra `closedAt` e atualiza `updatedAt`.
+
+O arquivamento passou a respeitar as seguintes regras:
+
+* demanda inexistente retorna `404 Not Found`;
+* demanda já arquivada não pode ser arquivada novamente;
+* demanda fechada pode ser arquivada;
+* o arquivamento altera `archived` para `true` e atualiza `updatedAt`.
+
+#### Validação
+
+Foi validado o fechamento de uma demanda aberta com `200 OK`.
+
+A mesma demanda foi submetida novamente ao fechamento e retornou:
+
+`400 Bad Request`
+
+`A demanda já está fechada.`
+
+Em seguida, a demanda fechada foi arquivada com sucesso, retornando `200 OK`.
+
+Uma segunda tentativa de arquivamento retornou:
+
+`400 Bad Request`
+
+`A demanda já está arquivada.`
+
+Também foi realizada tentativa de fechamento de uma demanda já arquivada, que retornou:
+
+`400 Bad Request`
+
+`Não é possível fechar uma demanda arquivada.`
+
+A persistência das alterações foi confirmada diretamente no PostgreSQL, incluindo:
+
+* `closedAt`;
+* `archived`;
+* `updatedAt`.
+
+A sequence `demand_code_seq` permaneceu inalterada após fechamento e arquivamento, confirmando que essas operações não consomem identificadores operacionais.
+
+#### Cenário pendente
+
+O cenário de arquivamento de uma demanda ainda aberta não foi executado porque o ambiente de teste não possuía uma demanda aberta disponível para esse cenário.
+
+Portanto, esse comportamento permanece deliberadamente pendente de definição/validação e não é considerado concluído neste incremento.
+
+#### Resultado
+
+As principais transições de fechamento e arquivamento foram implementadas e validadas.
+
+O domínio impede agora o fechamento repetido, o arquivamento repetido e o fechamento de demandas já arquivadas, mantendo a consistência dos campos `closedAt` e `archived`.
+
+A definição final do comportamento de arquivamento de demandas ainda abertas deverá ser tratada antes do encerramento completo do ciclo de vida de Demand.

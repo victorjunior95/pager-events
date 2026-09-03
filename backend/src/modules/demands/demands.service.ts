@@ -124,7 +124,28 @@ export class DemandsService {
   }
 
   async close(id: string) {
-    await this.ensureExists(id);
+    const demand = await this.prisma.demand.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        closedAt: true,
+        archived: true,
+      },
+    });
+
+    if (!demand) {
+      throw new NotFoundException('Demanda não encontrada.');
+    }
+
+    if (demand.archived) {
+      throw new BadRequestException(
+        'Não é possível fechar uma demanda arquivada.',
+      );
+    }
+
+    if (demand.closedAt) {
+      throw new BadRequestException('A demanda já está fechada.');
+    }
 
     return this.prisma.demand.update({
       where: { id },
@@ -142,7 +163,28 @@ export class DemandsService {
   }
 
   async archive(id: string) {
-    await this.ensureExists(id);
+    const demand = await this.prisma.demand.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        closedAt: true,
+        archived: true,
+      },
+    });
+
+    if (!demand) {
+      throw new NotFoundException('Demanda não encontrada.');
+    }
+
+    if (demand.archived) {
+      throw new BadRequestException('A demanda já está arquivada.');
+    }
+
+    if (!demand.closedAt) {
+      throw new BadRequestException(
+        'Não é possível arquivar uma demanda que não está fechada.',
+      );
+    }
 
     return this.prisma.demand.update({
       where: { id },
