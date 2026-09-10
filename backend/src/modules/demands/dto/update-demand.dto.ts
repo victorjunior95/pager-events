@@ -32,4 +32,8 @@ export class UpdateDemandDto {
   @IsArray()
   @IsUUID('4', { each: true })
   areaIds?: string[];
+
+  @IsOptional()
+  @IsUUID('4')
+  responsibleId?: string | null;
 }

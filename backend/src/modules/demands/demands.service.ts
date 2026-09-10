@@ -57,6 +57,15 @@ export class DemandsService {
             area: true,
           },
         },
+        responsible: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            active: true,
+          },
+        },
       },
     });
   }
@@ -75,6 +84,15 @@ export class DemandsService {
             createdAt: 'desc',
           },
         },
+        responsible: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            active: true,
+          },
+        },
       },
     });
 
@@ -86,7 +104,36 @@ export class DemandsService {
   }
 
   async update(id: string, dto: UpdateDemandDto) {
-    await this.ensureExists(id);
+    const demand = await this.prisma.demand.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        archived: true,
+        closedAt: true,
+      },
+    });
+
+    if (!demand) {
+      throw new NotFoundException('Demanda não encontrada.');
+    }
+
+    if (dto.responsibleId !== undefined) {
+      if (demand.archived) {
+        throw new BadRequestException(
+          'Não é possível alterar o responsável de uma demanda arquivada.',
+        );
+      }
+
+      if (demand.closedAt) {
+        throw new BadRequestException(
+          'Não é possível alterar o responsável de uma demanda fechada.',
+        );
+      }
+
+      if (dto.responsibleId !== null) {
+        await this.validateResponsible(dto.responsibleId);
+      }
+    }
 
     if (dto.areaIds !== undefined) {
       await this.validateAreas(dto.areaIds);
@@ -110,6 +157,18 @@ export class DemandsService {
       };
     }
 
+    if (dto.responsibleId !== undefined) {
+      data.responsible = dto.responsibleId
+        ? {
+            connect: {
+              id: dto.responsibleId,
+            },
+          }
+        : {
+            disconnect: true,
+          };
+    }
+
     return this.prisma.demand.update({
       where: { id },
       data,
@@ -117,6 +176,15 @@ export class DemandsService {
         areas: {
           include: {
             area: true,
+          },
+        },
+        responsible: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            active: true,
           },
         },
       },
@@ -201,17 +269,6 @@ export class DemandsService {
     });
   }
 
-  private async ensureExists(id: string) {
-    const demand = await this.prisma.demand.findUnique({
-      where: { id },
-      select: { id: true },
-    });
-
-    if (!demand) {
-      throw new NotFoundException('Demanda não encontrada.');
-    }
-  }
-
   private async validateAreas(areaIds: string[]) {
     if (areaIds.length === 0) {
       throw new BadRequestException(
@@ -234,6 +291,24 @@ export class DemandsService {
       throw new BadRequestException(
         'Uma ou mais áreas informadas não existem.',
       );
+    }
+  }
+
+  private async validateResponsible(responsibleId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: responsibleId },
+      select: {
+        id: true,
+        active: true,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('O responsável informado não existe.');
+    }
+
+    if (!user.active) {
+      throw new BadRequestException('O responsável informado está inativo.');
     }
   }
 }

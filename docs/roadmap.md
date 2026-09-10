@@ -756,15 +756,19 @@ Bloco 2.
 * [x] demanda fechada pode ser arquivada;
 * [x] demanda já arquivada não pode ser arquivada novamente;
 * [x] demanda arquivada não pode ser fechada;
-* [ ] comportamento de arquivamento de demanda ainda aberta.
+* [x] demanda aberta não pode ser arquivada.
 
-**Observação:** o cenário de arquivamento de uma demanda ainda aberta permanece pendente de validação, pois o ambiente de teste não possuía uma demanda aberta disponível para execução segura desse cenário.
+### Estado atual do domínio
 
 ### Estado atual do domínio
 
 O núcleo inicial de Demand encontra-se implementado e validado, incluindo persistência, CRUD, associação com áreas, identificador sequencial, autenticação, autorização, fechamento e arquivamento.
 
-As regras de ciclo de vida entre fechamento e arquivamento encontram-se parcialmente validadas. O comportamento de arquivamento de demanda ainda aberta permanece deliberadamente pendente.
+As regras de ciclo de vida entre fechamento e arquivamento foram validadas, incluindo a rejeição do arquivamento de demandas ainda abertas.
+
+A persistência da atribuição de responsável também foi consolidada, incluindo a relação entre `Demand` e `User`, o campo `responsibleId`, a chave estrangeira para `users` e a relação nomeada `DemandResponsible`.
+
+A implementação da regra de negócio para atribuição, alteração e remoção do responsável ainda não foi concluída.
 
 ### Próximos incrementos
 
@@ -773,6 +777,76 @@ As regras de ciclo de vida entre fechamento e arquivamento encontram-se parcialm
 * [ ] consolidação das regras de alteração de urgência/prioridade;
 * [ ] integração do histórico com as alterações estruturais;
 * [ ] validação consolidada das novas regras do domínio.
+
+### BL-03.3 — Atribuição de responsável
+
+#### Objetivo
+
+Implementar a atribuição e gerenciamento do responsável operacional da demanda.
+
+#### Entregas
+
+* relação entre demanda e usuário responsável;
+* atribuição de responsável;
+* troca de responsável;
+* remoção de responsável;
+* validação de existência do responsável;
+* validação de usuário ativo;
+* autorização por perfil;
+* restrições para demandas fechadas e arquivadas;
+* retorno do responsável nas consultas;
+* validação funcional da atribuição.
+
+#### BL-03.3.1 — Relação Demand ↔ User
+
+##### Objetivo
+
+Consolidar a estrutura persistente necessária para representar o usuário responsável por uma demanda.
+
+##### Implementações
+
+* utilização do campo `responsibleId` em `Demand`;
+* relacionamento entre `Demand` e `User`;
+* relacionamento inverso `User.responsibleDemands`;
+* definição explícita da relação Prisma como `DemandResponsible`;
+* utilização de `ON DELETE SET NULL` na relação com o usuário responsável;
+* índice sobre `responsibleId`;
+* manutenção das migrations já existentes para a persistência do responsável.
+
+##### Validação
+
+Foram validados:
+
+* `npx prisma validate`;
+* `npx prisma migrate status`;
+* geração do Prisma Client;
+* `npm run build`;
+* `npx eslint src`;
+* `git diff --check`;
+* preservação das demandas existentes no PostgreSQL;
+* existência do campo `responsibleId`;
+* manutenção dos valores existentes como `NULL` nas demandas ainda sem responsável.
+
+A relação persistente foi validada sem necessidade de nova migration, pois a estrutura de banco correspondente já havia sido criada pelas migrations:
+
+* `20260904193759_add_demand_responsible`;
+* `20260904232126_align_demand_responsible_relation`.
+
+##### Resultado
+
+O BL-03.3.1 foi concluído com sucesso.
+
+A camada de persistência está preparada para receber a implementação das regras de negócio de atribuição, alteração e remoção do responsável.
+
+**Próximo incremento:** BL-03.3.2 — gerenciamento do responsável da demanda.
+
+### Status
+
+🟡 Em andamento
+
+O incremento BL-03.3.1 — Relação Demand ↔ User foi concluído.
+
+Permanece pendente a implementação e validação das operações de atribuição, alteração e remoção do responsável.
 
 ### Status do Bloco
 

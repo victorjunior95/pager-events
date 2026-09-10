@@ -43,7 +43,8 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  areas UserArea[]
+  areas              UserArea[]
+  responsibleDemands Demand[]   @relation("DemandResponsible")
 
   @@map("users")
 }
@@ -75,16 +76,19 @@ model UserArea {
 }
 
 model Demand {
-  id          String        @id @default(uuid())
-  code        String        @unique
-  title       String
-  description String?
-  urgency     DemandUrgency @default(NENHUMA)
-  dueAt       DateTime?
-  archived    Boolean       @default(false)
-  closedAt    DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id            String        @id @default(uuid())
+  code          String        @unique
+  title         String
+  description   String?
+  urgency       DemandUrgency @default(NENHUMA)
+  dueAt         DateTime?
+  archived      Boolean       @default(false)
+  closedAt      DateTime?
+  responsibleId String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  responsible User? @relation("DemandResponsible", fields: [responsibleId], references: [id], onDelete: SetNull)
 
   areas   DemandArea[]
   history DemandHistory[]
@@ -92,6 +96,7 @@ model Demand {
   @@index([urgency])
   @@index([archived])
   @@index([dueAt])
+  @@index([responsibleId])
   @@map("demands")
 }
 

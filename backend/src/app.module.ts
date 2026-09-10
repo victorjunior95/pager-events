@@ -13,6 +13,7 @@ import { DemandsModule } from './modules/demands/demands.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: '../.env',
       load: [authConfig],
     }),
     PrismaModule,

@@ -1063,3 +1063,93 @@ As principais transições de fechamento e arquivamento foram implementadas e va
 O domínio impede agora o fechamento repetido, o arquivamento repetido e o fechamento de demandas já arquivadas, mantendo a consistência dos campos `closedAt` e `archived`.
 
 A definição final do comportamento de arquivamento de demandas ainda abertas deverá ser tratada antes do encerramento completo do ciclo de vida de Demand.
+
+## 2026-09-10
+
+### BL-03.2 — Validação complementar do ciclo de vida de Demand
+
+#### Objetivo
+
+Concluir a validação das regras de ciclo de vida relacionadas ao arquivamento de demandas ainda abertas.
+
+#### Validação
+
+Foi criada e utilizada uma demanda aberta especificamente para validar o comportamento do arquivamento antes do fechamento.
+
+A tentativa de arquivar a demanda aberta foi rejeitada com:
+
+`400 Bad Request`
+
+`Não é possível arquivar uma demanda que não está fechada.`
+
+Com isso, foram validados todos os cenários definidos para o ciclo de vida entre fechamento e arquivamento:
+
+* demanda aberta pode ser fechada;
+* demanda já fechada não pode ser fechada novamente;
+* demanda fechada pode ser arquivada;
+* demanda já arquivada não pode ser arquivada novamente;
+* demanda arquivada não pode ser fechada;
+* demanda aberta não pode ser arquivada.
+
+#### Resultado
+
+A validação complementar foi concluída com sucesso.
+
+O comportamento de arquivamento de demandas abertas encontra-se definido e validado, encerrando a pendência existente no BL-03.2.
+
+---
+
+### BL-03.3.1 — Relação Demand ↔ User
+
+#### Objetivo
+
+Consolidar a estrutura persistente necessária para representar o usuário responsável por uma demanda antes da implementação das operações de negócio de atribuição.
+
+#### Implementações
+
+A estrutura do domínio foi alinhada para representar explicitamente a relação entre `Demand` e `User`.
+
+Foram consolidados:
+
+* `Demand.responsibleId`;
+* relação `Demand.responsible`;
+* relação inversa `User.responsibleDemands`;
+* nome explícito da relação Prisma como `DemandResponsible`;
+* índice sobre `responsibleId`;
+* chave estrangeira de `demands.responsibleId` para `users.id`;
+* comportamento `ON DELETE SET NULL`.
+
+A persistência já havia sido introduzida pelas migrations:
+
+* `20260904193759_add_demand_responsible`;
+* `20260904232126_align_demand_responsible_relation`.
+
+A segunda migration corrigiu a primeira implementação, removendo a coluna indevida `userId` e mantendo `responsibleId` como única referência ao usuário responsável.
+
+Nenhuma nova migration foi criada neste incremento, pois a estrutura necessária já existia no banco.
+
+#### Validação
+
+Foram executados com sucesso:
+
+* `docker compose exec backend npx prisma validate`;
+* `docker compose exec backend npx prisma generate`;
+* `docker compose exec backend npm run build`;
+* `docker compose exec backend npx eslint src`;
+* `git diff --check`.
+
+O status das migrations também foi validado no container e retornou:
+
+`Database schema is up to date!`
+
+A estrutura existente foi conferida diretamente no PostgreSQL, confirmando o campo `responsibleId` e sua ausência de valores atribuídos nas demandas existentes.
+
+As cinco demandas existentes permaneceram preservadas.
+
+#### Resultado
+
+O BL-03.3.1 foi concluído com sucesso.
+
+A persistência da relação entre demanda e responsável está preparada para suportar as próximas regras de negócio.
+
+O próximo incremento será o BL-03.3.2 — atribuição, alteração e remoção do responsável.
