@@ -1153,3 +1153,138 @@ O BL-03.3.1 foi concluído com sucesso.
 A persistência da relação entre demanda e responsável está preparada para suportar as próximas regras de negócio.
 
 O próximo incremento será o BL-03.3.2 — atribuição, alteração e remoção do responsável.
+
+#### Validação complementar
+
+Posteriormente, foi disponibilizada uma demanda aberta para completar o cenário que permanecia pendente.
+
+Foi realizada tentativa de arquivamento da demanda ainda aberta, que retornou:
+
+`400 Bad Request`
+
+`Não é possível arquivar uma demanda que não está fechada.`
+
+Dessa forma, o ciclo de vida entre fechamento e arquivamento foi considerado completamente validado.
+
+#### Resultado
+
+As regras de ciclo de vida de Demand foram implementadas e validadas.
+
+O domínio impede:
+
+* fechamento repetido;
+* fechamento de demanda arquivada;
+* arquivamento repetido;
+* arquivamento de demanda ainda aberta.
+
+As alterações de estado foram confirmadas no PostgreSQL.
+
+### BL-03.3 — Gerenciamento do responsável da demanda
+
+#### Objetivo
+
+Implementar o gerenciamento completo do responsável operacional de uma demanda, contemplando atribuição, troca e remoção, respeitando as regras de autorização e o ciclo de vida da demanda.
+
+#### BL-03.3.1 — Relação Demand ↔ User
+
+A estrutura persistente do responsável foi consolidada anteriormente por meio do campo `responsibleId` em `Demand` e da relação nomeada `DemandResponsible`.
+
+A relação inversa `User.responsibleDemands` também foi definida.
+
+Não foi necessária nova migration neste incremento, pois a estrutura persistente já havia sido criada pelas migrations existentes:
+
+* `20260904193759_add_demand_responsible`;
+* `20260904232126_align_demand_responsible_relation`.
+
+#### BL-03.3.2 — Atribuição e troca
+
+Foi implementado o endpoint:
+
+`PATCH /api/demands/:id/responsible`
+
+O endpoint permite que `ADMIN` e `MANAGER` atribuam ou substituam o responsável de uma demanda.
+
+Foram implementadas as seguintes validações:
+
+* demanda inexistente;
+* demanda fechada;
+* demanda arquivada;
+* usuário responsável inexistente;
+* usuário responsável desativado;
+* autorização por perfil.
+
+Durante a validação foi identificado que a rota possuía `@Roles(UserRole.ADMIN, UserRole.MANAGER)`, porém não aplicava `RolesGuard` diretamente.
+
+A proteção foi corrigida para utilizar:
+
+`@UseGuards(JwtAuthGuard, RolesGuard)`
+
+Após a correção, uma tentativa de atribuição realizada por `STAFF` passou a retornar corretamente:
+
+`403 Forbidden`
+
+Também foram validadas:
+
+* atribuição por `ADMIN`: `200 OK`;
+* atribuição por `MANAGER`: `200 OK`;
+* troca do responsável atual por outro usuário ativo: `200 OK`;
+* persistência do novo responsável;
+* confirmação da alteração diretamente no PostgreSQL;
+* retorno do responsável na consulta da demanda;
+* ausência de `passwordHash` nas respostas.
+
+#### BL-03.3.3 — Remoção do responsável
+
+Foi implementado o endpoint:
+
+`DELETE /api/demands/:id/responsible`
+
+A operação utiliza `disconnect` na relação Prisma, preservando o usuário e removendo somente a associação com a demanda.
+
+Foram validados:
+
+* remoção por `ADMIN`: `200 OK`;
+* remoção por `MANAGER`: `200 OK`;
+* `responsibleId` persistido como `NULL`;
+* `responsible` retornado como `null`;
+* rejeição de `STAFF`: `403 Forbidden`;
+* rejeição sem autenticação: `401 Unauthorized`;
+* demanda inexistente: `404 Not Found`;
+* demanda fechada: `400 Bad Request`;
+* demanda arquivada: `400 Bad Request`.
+
+Durante o teste de demanda arquivada foi identificado um detalhe de precedência nas validações: como toda demanda arquivada possui `closedAt`, a verificação de fechamento ocorria antes da verificação de arquivamento.
+
+A ordem foi corrigida para verificar `archived` antes de `closedAt`, permitindo retornar a mensagem específica:
+
+`Não é possível remover o responsável de uma demanda arquivada.`
+
+#### Validação técnica
+
+Após as implementações e correções foram executados:
+
+* `docker compose exec backend npm run build`;
+* `docker compose exec backend npx eslint src`;
+* `git diff --check`.
+
+Todos foram concluídos com sucesso.
+
+#### Resultado
+
+O gerenciamento do responsável da demanda foi concluído.
+
+O Pager possui agora:
+
+* atribuição de responsável;
+* troca de responsável;
+* remoção de responsável;
+* autorização específica para `ADMIN` e `MANAGER`;
+* bloqueio para `STAFF`;
+* validação de usuário ativo;
+* bloqueio para demandas fechadas;
+* bloqueio para demandas arquivadas;
+* persistência e consulta do responsável.
+
+O próximo incremento do Bloco 3 será:
+
+**BL-03.4 — Status/Andamento operacional.**

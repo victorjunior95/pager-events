@@ -760,29 +760,29 @@ Bloco 2.
 
 ### Estado atual do domínio
 
-### Estado atual do domínio
-
 O núcleo inicial de Demand encontra-se implementado e validado, incluindo persistência, CRUD, associação com áreas, identificador sequencial, autenticação, autorização, fechamento e arquivamento.
 
 As regras de ciclo de vida entre fechamento e arquivamento foram validadas, incluindo a rejeição do arquivamento de demandas ainda abertas.
 
-A persistência da atribuição de responsável também foi consolidada, incluindo a relação entre `Demand` e `User`, o campo `responsibleId`, a chave estrangeira para `users` e a relação nomeada `DemandResponsible`.
+A persistência da atribuição de responsável foi consolidada, incluindo a relação entre `Demand` e `User`, o campo `responsibleId`, a chave estrangeira para `users`, a relação nomeada `DemandResponsible` e o índice sobre `responsibleId`.
 
-A implementação da regra de negócio para atribuição, alteração e remoção do responsável ainda não foi concluída.
+As operações de gerenciamento do responsável também foram implementadas e validadas, contemplando atribuição, troca e remoção de responsável, com controle de autorização e restrições de ciclo de vida.
 
 ### Próximos incrementos
 
-* [ ] definição e implementação da atribuição de responsável;
+* [x] atribuição de responsável;
+* [x] troca de responsável;
+* [x] remoção de responsável;
 * [ ] definição e implementação do andamento/status operacional;
 * [ ] consolidação das regras de alteração de urgência/prioridade;
 * [ ] integração do histórico com as alterações estruturais;
 * [ ] validação consolidada das novas regras do domínio.
 
-### BL-03.3 — Atribuição de responsável
+### BL-03.3 — Gerenciamento do responsável
 
 #### Objetivo
 
-Implementar a atribuição e gerenciamento do responsável operacional da demanda.
+Implementar a atribuição e o gerenciamento do responsável operacional da demanda.
 
 #### Entregas
 
@@ -795,7 +795,8 @@ Implementar a atribuição e gerenciamento do responsável operacional da demand
 * autorização por perfil;
 * restrições para demandas fechadas e arquivadas;
 * retorno do responsável nas consultas;
-* validação funcional da atribuição.
+* persistência das alterações;
+* validação funcional das operações.
 
 #### BL-03.3.1 — Relação Demand ↔ User
 
@@ -813,40 +814,113 @@ Consolidar a estrutura persistente necessária para representar o usuário respo
 * índice sobre `responsibleId`;
 * manutenção das migrations já existentes para a persistência do responsável.
 
-##### Validação
-
-Foram validados:
-
-* `npx prisma validate`;
-* `npx prisma migrate status`;
-* geração do Prisma Client;
-* `npm run build`;
-* `npx eslint src`;
-* `git diff --check`;
-* preservação das demandas existentes no PostgreSQL;
-* existência do campo `responsibleId`;
-* manutenção dos valores existentes como `NULL` nas demandas ainda sem responsável.
-
-A relação persistente foi validada sem necessidade de nova migration, pois a estrutura de banco correspondente já havia sido criada pelas migrations:
-
-* `20260904193759_add_demand_responsible`;
-* `20260904232126_align_demand_responsible_relation`.
-
 ##### Resultado
 
 O BL-03.3.1 foi concluído com sucesso.
 
-A camada de persistência está preparada para receber a implementação das regras de negócio de atribuição, alteração e remoção do responsável.
+A camada de persistência está preparada para representar o responsável atual da demanda.
 
-**Próximo incremento:** BL-03.3.2 — gerenciamento do responsável da demanda.
+#### BL-03.3.2 — Gerenciamento do responsável
+
+##### Objetivo
+
+Implementar as operações de atribuição, troca e remoção do responsável da demanda.
+
+##### Implementações
+
+* `PATCH /api/demands/:id/responsible` para atribuição e troca;
+* `DELETE /api/demands/:id/responsible` para remoção;
+* validação de existência da demanda;
+* validação de existência do usuário responsável;
+* rejeição de usuário responsável desativado;
+* proteção das operações por `JwtAuthGuard` e `RolesGuard`;
+* autorização para `ADMIN` e `MANAGER`;
+* rejeição de `STAFF` com `403 Forbidden`;
+* rejeição de requisições sem autenticação com `401 Unauthorized`;
+* bloqueio da alteração de responsável em demandas fechadas;
+* bloqueio da alteração de responsável em demandas arquivadas;
+* retorno do responsável utilizando somente campos públicos e seguros;
+* persistência das alterações no PostgreSQL.
+
+##### BL-03.3.2.1 — Atribuição
+
+**Status:** 🟢 Concluído
+
+Foram validados:
+
+* `ADMIN` atribuindo responsável: `200 OK`;
+* `MANAGER` atribuindo responsável: `200 OK`;
+* `STAFF` tentando atribuir: `403 Forbidden`;
+* requisição sem JWT: `401 Unauthorized`;
+* usuário inexistente: `404 Not Found`;
+* usuário desativado: `400 Bad Request`;
+* demanda fechada: `400 Bad Request`;
+* demanda arquivada: `400 Bad Request`;
+* persistência do `responsibleId` no PostgreSQL;
+* retorno do responsável na resposta;
+* ausência de `passwordHash` na resposta.
+
+##### BL-03.3.2.2 — Troca de responsável
+
+**Status:** 🟢 Concluído
+
+A troca utiliza o mesmo endpoint de atribuição:
+
+`PATCH /api/demands/:id/responsible`
+
+Foram validados:
+
+* `MANAGER` substituindo o responsável atual: `200 OK`;
+* persistência do novo `responsibleId`;
+* consulta posterior retornando o novo responsável;
+* confirmação direta da alteração no PostgreSQL;
+* segunda troca de responsável validada com sucesso;
+* manutenção das restrições de autorização e ciclo de vida.
+
+##### BL-03.3.2.3 — Remoção de responsável
+
+**Status:** 🟢 Concluído
+
+Foi implementado:
+
+`DELETE /api/demands/:id/responsible`
+
+Foram validados:
+
+* `ADMIN` removendo responsável: `200 OK`;
+* `MANAGER` removendo responsável: `200 OK`;
+* `responsibleId` retornando para `NULL`;
+* `responsible` retornando `null`;
+* persistência de `NULL` confirmada no PostgreSQL;
+* `STAFF` rejeitado com `403 Forbidden`;
+* requisição sem autenticação rejeitada com `401 Unauthorized`;
+* demanda inexistente rejeitada com `404 Not Found`;
+* demanda fechada rejeitada com `400 Bad Request`;
+* demanda arquivada rejeitada com `400 Bad Request`.
+
+Durante a validação foi identificado que uma demanda arquivada também possui `closedAt`. A ordem das verificações foi ajustada para que o estado arquivado seja tratado antes do estado fechado, garantindo a mensagem específica:
+
+`Não é possível remover o responsável de uma demanda arquivada.`
+
+##### Validação técnica
+
+Após a implementação e correção das regras:
+
+* `npm run build`: concluído com sucesso;
+* `npx eslint src`: concluído com código de saída `0`;
+* `git diff --check`: concluído sem apontamentos.
+
+##### Resultado
+
+O BL-03.3 foi concluído com sucesso.
+
+O domínio de Demand possui agora o gerenciamento completo do responsável operacional, incluindo atribuição, troca e remoção, com autorização por perfil, validação do estado do usuário e restrições de ciclo de vida.
+
+**Próximo incremento:** BL-03.4 — Status/Andamento operacional.
 
 ### Status
 
-🟡 Em andamento
-
-O incremento BL-03.3.1 — Relação Demand ↔ User foi concluído.
-
-Permanece pendente a implementação e validação das operações de atribuição, alteração e remoção do responsável.
+🟢 Concluído
 
 ### Status do Bloco
 

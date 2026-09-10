@@ -269,6 +269,124 @@ export class DemandsService {
     });
   }
 
+  async removeResponsible(demandId: string) {
+    const demand = await this.prisma.demand.findUnique({
+      where: { id: demandId },
+      select: {
+        id: true,
+        closedAt: true,
+        archived: true,
+      },
+    });
+
+    if (!demand) {
+      throw new NotFoundException('Demanda não encontrada.');
+    }
+
+    if (demand.archived) {
+      throw new BadRequestException(
+        'Não é possível remover o responsável de uma demanda arquivada.',
+      );
+    }
+
+    if (demand.closedAt) {
+      throw new BadRequestException(
+        'Não é possível remover o responsável de uma demanda fechada.',
+      );
+    }
+
+    return this.prisma.demand.update({
+      where: { id: demandId },
+      data: {
+        responsible: {
+          disconnect: true,
+        },
+      },
+      include: {
+        areas: {
+          include: {
+            area: true,
+          },
+        },
+        responsible: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            active: true,
+          },
+        },
+      },
+    });
+  }
+
+  async assignResponsible(demandId: string, responsibleId: string) {
+    const demand = await this.prisma.demand.findUnique({
+      where: { id: demandId },
+      select: {
+        id: true,
+        closedAt: true,
+        archived: true,
+      },
+    });
+
+    if (!demand) {
+      throw new NotFoundException('Demanda não encontrada.');
+    }
+
+    if (demand.closedAt) {
+      throw new BadRequestException(
+        'Não é possível atribuir responsável a uma demanda fechada.',
+      );
+    }
+
+    if (demand.archived) {
+      throw new BadRequestException(
+        'Não é possível atribuir responsável a uma demanda arquivada.',
+      );
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: responsibleId },
+      select: {
+        id: true,
+        active: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuário responsável não encontrado.');
+    }
+
+    if (!user.active) {
+      throw new BadRequestException('O usuário responsável está desativado.');
+    }
+
+    return this.prisma.demand.update({
+      where: { id: demandId },
+      data: {
+        responsibleId: user.id,
+      },
+      include: {
+        areas: {
+          include: {
+            area: true,
+          },
+        },
+        responsible: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            active: true,
+          },
+        },
+      },
+    });
+  }
+
   private async validateAreas(areaIds: string[]) {
     if (areaIds.length === 0) {
       throw new BadRequestException(
