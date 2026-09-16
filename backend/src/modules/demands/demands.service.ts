@@ -2,11 +2,23 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateDemandDto } from './dto/create-demand.dto';
 import { UpdateDemandDto } from './dto/update-demand.dto';
-import { DemandUrgency, Prisma } from '../../generated/prisma/client';
+import { Prisma } from '../../generated/prisma/client';
+import { UserRole, DemandUrgency } from '../../generated/prisma/enums';
+import { DemandStatusDto } from './dto/demand-status.enum';
+
+const ALLOWED_NEXT_STATUS: Record<DemandStatusDto, DemandStatusDto | null> = {
+  [DemandStatusDto.NOVA]: DemandStatusDto.TRIAGEM,
+  [DemandStatusDto.TRIAGEM]: DemandStatusDto.RESPONSAVEL_ATRIBUIDO,
+  [DemandStatusDto.RESPONSAVEL_ATRIBUIDO]: DemandStatusDto.EM_ANDAMENTO,
+  [DemandStatusDto.EM_ANDAMENTO]: DemandStatusDto.CONCLUSAO_SINALIZADA,
+  [DemandStatusDto.CONCLUSAO_SINALIZADA]: DemandStatusDto.ARQUIVADA,
+  [DemandStatusDto.ARQUIVADA]: null,
+};
 
 @Injectable()
 export class DemandsService {
@@ -360,7 +372,7 @@ export class DemandsService {
     }
 
     if (!user.active) {
-      throw new BadRequestException('O usuário responsável está desativado.');
+      throw new ForbiddenException('O usuário responsável está desativado.');
     }
 
     return this.prisma.demand.update({
@@ -428,5 +440,116 @@ export class DemandsService {
     if (!user.active) {
       throw new BadRequestException('O responsável informado está inativo.');
     }
+  }
+
+  async updateStatus(
+    id: string,
+    status: DemandStatusDto,
+    actorId: string,
+    actorRole: UserRole,
+  ) {
+    const demand = await this.prisma.demand.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        status: true,
+        responsibleId: true,
+        closedAt: true,
+        archived: true,
+      },
+    });
+
+    if (!demand) {
+      throw new NotFoundException('Demanda não encontrada.');
+    }
+
+    const currentStatus = demand.status as DemandStatusDto;
+
+    if (currentStatus === status) {
+      throw new BadRequestException('A demanda já está nesse status.');
+    }
+
+    if (demand.archived || currentStatus === DemandStatusDto.ARQUIVADA) {
+      throw new BadRequestException(
+        'Não é possível alterar o status de uma demanda arquivada.',
+      );
+    }
+
+    const nextStatus = ALLOWED_NEXT_STATUS[currentStatus];
+
+    if (nextStatus !== status) {
+      throw new BadRequestException(
+        `Transição de status inválida: ${currentStatus} → ${status}.`,
+      );
+    }
+
+    if (
+      status === DemandStatusDto.TRIAGEM ||
+      status === DemandStatusDto.RESPONSAVEL_ATRIBUIDO
+    ) {
+      if (actorRole !== UserRole.ADMIN && actorRole !== UserRole.MANAGER) {
+        throw new ForbiddenException(
+          'Somente supervisores podem avançar a demanda até a atribuição de responsável.',
+        );
+      }
+    }
+
+    if (
+      status === DemandStatusDto.RESPONSAVEL_ATRIBUIDO &&
+      !demand.responsibleId
+    ) {
+      throw new BadRequestException(
+        'A demanda precisa possuir um responsável para avançar para RESPONSAVEL_ATRIBUIDO.',
+      );
+    }
+
+    if (
+      status === DemandStatusDto.EM_ANDAMENTO ||
+      status === DemandStatusDto.CONCLUSAO_SINALIZADA
+    ) {
+      if (demand.responsibleId !== actorId) {
+        throw new ForbiddenException(
+          'Somente o responsável atual pode atualizar o andamento da demanda.',
+        );
+      }
+    }
+
+    if (status === DemandStatusDto.ARQUIVADA) {
+      if (actorRole !== UserRole.ADMIN && actorRole !== UserRole.MANAGER) {
+        throw new ForbiddenException(
+          'Somente supervisores podem arquivar a demanda.',
+        );
+      }
+    }
+
+    const data: Prisma.DemandUpdateInput = {
+      status,
+    };
+
+    if (status === DemandStatusDto.ARQUIVADA) {
+      data.archived = true;
+      data.closedAt = demand.closedAt ?? new Date();
+    }
+
+    return this.prisma.demand.update({
+      where: { id },
+      data,
+      include: {
+        areas: {
+          include: {
+            area: true,
+          },
+        },
+        responsible: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            active: true,
+          },
+        },
+      },
+    });
   }
 }

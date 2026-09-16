@@ -33,6 +33,15 @@ enum DemandUrgency {
   CRÍTICA
 }
 
+enum DemandStatus {
+  NOVA
+  TRIAGEM
+  RESPONSAVEL_ATRIBUIDO
+  EM_ANDAMENTO
+  CONCLUSAO_SINALIZADA
+  ARQUIVADA
+}
+
 model User {
   id           String   @id @default(uuid())
   name         String
@@ -81,6 +90,7 @@ model Demand {
   title         String
   description   String?
   urgency       DemandUrgency @default(NENHUMA)
+  status        DemandStatus  @default(NOVA)
   dueAt         DateTime?
   archived      Boolean       @default(false)
   closedAt      DateTime?
@@ -94,6 +104,7 @@ model Demand {
   history DemandHistory[]
 
   @@index([urgency])
+  @@index([status])
   @@index([archived])
   @@index([dueAt])
   @@index([responsibleId])

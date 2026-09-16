@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   UseGuards,
   Delete,
+  Req,
 } from '@nestjs/common';
 import { DemandsService } from './demands.service';
 import { CreateDemandDto } from './dto/create-demand.dto';
@@ -17,6 +18,14 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../../generated/prisma/enums';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { AssignDemandResponsibleDto } from './dto/assign-demand-responsible.dto';
+import { UpdateDemandStatusDto } from './dto/update-demand-status.dto';
+
+interface AuthenticatedRequest {
+  user: {
+    id: string;
+    role: UserRole;
+  };
+}
 
 @UseGuards(JwtAuthGuard)
 @Controller('demands')
@@ -83,5 +92,21 @@ export class DemandsController {
   @Delete(':id/responsible')
   removeResponsible(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.demandsService.removeResponsible(id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF)
+  @Patch(':id/status')
+  updateStatus(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdateDemandStatusDto,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.demandsService.updateStatus(
+      id,
+      dto.status,
+      request.user.id,
+      request.user.role,
+    );
   }
 }

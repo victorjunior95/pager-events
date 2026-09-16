@@ -773,7 +773,7 @@ As operações de gerenciamento do responsável também foram implementadas e va
 * [x] atribuição de responsável;
 * [x] troca de responsável;
 * [x] remoção de responsável;
-* [ ] definição e implementação do andamento/status operacional;
+* [x] definição e implementação do andamento/status operacional;
 * [ ] consolidação das regras de alteração de urgência/prioridade;
 * [ ] integração do histórico com as alterações estruturais;
 * [ ] validação consolidada das novas regras do domínio.
@@ -921,6 +921,46 @@ O domínio de Demand possui agora o gerenciamento completo do responsável opera
 ### Status
 
 🟢 Concluído
+
+### BL-03.4 — Status/Andamento operacional
+
+**Objetivo:** implementar o fluxo operacional da demanda por meio de status explícitos, com transições controladas e regras de autorização compatíveis com os papéis existentes.
+
+**Implementação:**
+
+* criação do enum persistente `DemandStatus`;
+* inclusão do campo `status` em `Demand`, com `NOVA` como estado inicial;
+* criação do DTO `UpdateDemandStatusDto`, com validação por enum;
+* criação do endpoint `PATCH /api/demands/:id/status`;
+* definição do fluxo operacional:
+  * `NOVA → TRIAGEM`;
+  * `TRIAGEM → RESPONSAVEL_ATRIBUIDO`;
+  * `RESPONSAVEL_ATRIBUIDO → EM_ANDAMENTO`;
+  * `EM_ANDAMENTO → CONCLUSAO_SINALIZADA`;
+  * `CONCLUSAO_SINALIZADA → ARQUIVADA`;
+* rejeição de transições fora da sequência definida;
+* exigência de responsável para avançar para `RESPONSAVEL_ATRIBUIDO`;
+* restrição das etapas de triagem/atribuição e arquivamento aos papéis `MANAGER` e `ADMIN`;
+* restrição do andamento e da sinalização de conclusão ao responsável atual;
+* tratamento de `ARQUIVADA` como estado terminal;
+* ao arquivar via fluxo de status, sincronização de `archived = true` e definição de `closedAt` quando necessário.
+
+**Validação:**
+
+* build e lint do backend aprovados;
+* criação de demanda iniciando em `NOVA`;
+* fluxo completo `NOVA → TRIAGEM → RESPONSAVEL_ATRIBUIDO → EM_ANDAMENTO → CONCLUSAO_SINALIZADA → ARQUIVADA` validado;
+* tentativa de avançar para `RESPONSAVEL_ATRIBUIDO` sem responsável rejeitada;
+* tentativa de alteração do andamento por usuário que não é o responsável rejeitada;
+* tentativa de alterar demanda arquivada rejeitada;
+* transições inválidas intermediárias e retrocessos rejeitados;
+* persistência dos estados validada diretamente no PostgreSQL.
+
+**Observação de compatibilidade:**
+
+Os endpoints legados de `/close` e `/archive` permanecem preservados neste incremento. Eles ainda operam sobre `closedAt` e `archived` sem convergência automática completa com `status`. A consolidação dessas regras fica para um incremento complementar, evitando alteração ampla do comportamento já validado.
+
+**Status:** 🟢 Concluído
 
 ### Status do Bloco
 

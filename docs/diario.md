@@ -1288,3 +1288,101 @@ O Pager possui agora:
 O próximo incremento do Bloco 3 será:
 
 **BL-03.4 — Status/Andamento operacional.**
+
+## 2026-09-16
+
+### BL-03.4 — Status/Andamento operacional
+
+**Objetivo**
+
+Implementar o andamento operacional da demanda por meio de uma máquina de estados explícita, mantendo as regras de autorização alinhadas aos papéis existentes e preservando, neste momento, os endpoints legados do ciclo de vida.
+
+**Implementação realizada**
+
+Foi incorporado o status persistente `DemandStatus` ao modelo `Demand`, com os seguintes estados:
+
+- `NOVA`
+- `TRIAGEM`
+- `RESPONSAVEL_ATRIBUIDO`
+- `EM_ANDAMENTO`
+- `CONCLUSAO_SINALIZADA`
+- `ARQUIVADA`
+
+O estado inicial das novas demandas permanece `NOVA`.
+
+Foi criada a migration:
+
+`20260911142600_add_demand_status`
+
+Também foi criado o DTO `UpdateDemandStatusDto`, utilizando validação por enum, e disponibilizado o endpoint:
+
+`PATCH /api/demands/:id/status`
+
+O fluxo permitido ficou definido como:
+
+`NOVA → TRIAGEM → RESPONSAVEL_ATRIBUIDO → EM_ANDAMENTO → CONCLUSAO_SINALIZADA → ARQUIVADA`
+
+A implementação rejeita transições fora da sequência e trata `ARQUIVADA` como estado terminal.
+
+**Regras de autorização**
+
+- `ADMIN` e `MANAGER` podem avançar a demanda até `TRIAGEM` e `RESPONSAVEL_ATRIBUIDO`;
+- `RESPONSAVEL_ATRIBUIDO` exige que exista responsável definido;
+- somente o responsável atual pode avançar a demanda para `EM_ANDAMENTO`;
+- somente o responsável atual pode sinalizar `CONCLUSAO_SINALIZADA`;
+- somente `ADMIN` e `MANAGER` podem realizar o arquivamento;
+- demandas arquivadas não podem sofrer novas alterações de status.
+
+Ao realizar o arquivamento pelo endpoint de status, `archived` é definido como `true` e `closedAt` é preenchido quando ainda não estiver definido.
+
+**Validação funcional**
+
+Foi utilizado o fluxo da demanda `DEM-000010` para validar o ciclo completo:
+
+1. criação da demanda em `NOVA`;
+2. avanço para `TRIAGEM`;
+3. tentativa de avanço para `RESPONSAVEL_ATRIBUIDO` sem responsável, rejeitada;
+4. atribuição do responsável;
+5. avanço para `EM_ANDAMENTO` pelo responsável;
+6. tentativa de avanço por outro usuário, rejeitada;
+7. avanço para `CONCLUSAO_SINALIZADA` pelo responsável;
+8. arquivamento por `MANAGER`;
+9. tentativa de alteração após arquivamento, rejeitada.
+
+O fluxo completo foi persistido corretamente no PostgreSQL.
+
+**Validação de transições inválidas**
+
+Também foram validadas as seguintes tentativas:
+
+- `NOVA → EM_ANDAMENTO`;
+- `NOVA → CONCLUSAO_SINALIZADA`;
+- `NOVA → ARQUIVADA`;
+- `TRIAGEM → EM_ANDAMENTO`;
+- `EM_ANDAMENTO → NOVA`;
+- `CONCLUSAO_SINALIZADA → EM_ANDAMENTO`;
+- `ARQUIVADA → NOVA`.
+
+Todas foram rejeitadas conforme a máquina de estados definida.
+
+**Validação técnica**
+
+- `npx prisma validate` aprovado;
+- geração do Prisma Client aprovada;
+- `npm run build` do backend aprovado;
+- `npx eslint src` aprovado;
+- persistência do campo `status` e dos valores utilizados validada diretamente no PostgreSQL.
+
+**Observação**
+
+Os endpoints legados `/close` e `/archive` continuam preservados. Durante a validação foi identificada a possibilidade de existirem demandas arquivadas por esses endpoints com `archived = true` e `status = NOVA`. Isso decorre da ausência, ainda intencional, de convergência completa entre o fluxo legado e a nova máquina de estados.
+
+Essa consolidação deverá ser tratada posteriormente, sem reabrir ou alterar o comportamento já validado neste incremento.
+
+**Resultado**
+
+O BL-03.4 foi concluído com a implementação e validação do fluxo operacional de status da demanda. As transições válidas, transições inválidas, regras de responsabilidade e restrições de arquivamento foram exercitadas com sucesso.
+
+**Próximo incremento**
+
+O próximo foco permanece na **consolidação das regras de alteração de urgência/prioridade**, seguido pela integração do histórico às alterações estruturais e pela validação consolidada das novas regras do domínio.
