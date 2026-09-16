@@ -1386,3 +1386,34 @@ O BL-03.4 foi concluído com a implementação e validação do fluxo operaciona
 **Próximo incremento**
 
 O próximo foco permanece na **consolidação das regras de alteração de urgência/prioridade**, seguido pela integração do histórico às alterações estruturais e pela validação consolidada das novas regras do domínio.
+
+### BL-03.5 — Controle de alteração de urgência
+
+**Status:** 🟢 Concluído
+
+Implementado o controle de autorização para alteração da urgência das demandas.
+
+#### Implementação
+
+- Mantido `DemandUrgencyDto` com validação por `@IsEnum`.
+- Alterações de `urgency` permitidas somente para `ADMIN` e `MANAGER`.
+- `STAFF` recebe `403` ao tentar alterar a urgência.
+- Edições normais da demanda continuam disponíveis para `STAFF`.
+- Valores de urgência fora do enum são rejeitados pelo `ValidationPipe`.
+
+#### Validações executadas
+
+- `docker compose exec backend npx eslint src` → ✅
+- `docker compose exec backend npm run build` → ✅
+- `git diff --check` → ✅
+- `MANAGER` alterando urgência → `200` ✅
+- `STAFF` alterando urgência → `403` ✅
+- `ADMIN` alterando urgência → `200` ✅
+- `STAFF` alterando somente descrição → `200` ✅
+- urgência inválida → `400` ✅
+
+#### Resultado
+
+O controle de urgência foi implementado sem interferir na edição normal das demandas.
+
+**Próximo foco:** histórico das alterações estruturais da demanda.

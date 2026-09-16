@@ -774,7 +774,7 @@ As operações de gerenciamento do responsável também foram implementadas e va
 * [x] troca de responsável;
 * [x] remoção de responsável;
 * [x] definição e implementação do andamento/status operacional;
-* [ ] consolidação das regras de alteração de urgência/prioridade;
+* [x] consolidação das regras de alteração de urgência/prioridade;
 * [ ] integração do histórico com as alterações estruturais;
 * [ ] validação consolidada das novas regras do domínio.
 

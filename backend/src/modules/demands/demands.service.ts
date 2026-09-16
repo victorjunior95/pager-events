@@ -115,7 +115,7 @@ export class DemandsService {
     return demand;
   }
 
-  async update(id: string, dto: UpdateDemandDto) {
+  async update(id: string, dto: UpdateDemandDto, actorRole: UserRole) {
     const demand = await this.prisma.demand.findUnique({
       where: { id },
       select: {
@@ -127,6 +127,16 @@ export class DemandsService {
 
     if (!demand) {
       throw new NotFoundException('Demanda não encontrada.');
+    }
+
+    if (
+      dto.urgency !== undefined &&
+      actorRole !== UserRole.ADMIN &&
+      actorRole !== UserRole.MANAGER
+    ) {
+      throw new ForbiddenException(
+        'Somente supervisores podem alterar a urgência da demanda.',
+      );
     }
 
     if (dto.responsibleId !== undefined) {

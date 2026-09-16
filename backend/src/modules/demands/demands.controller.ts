@@ -59,8 +59,9 @@ export class DemandsController {
   update(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: UpdateDemandDto,
+    @Req() request: AuthenticatedRequest,
   ) {
-    return this.demandsService.update(id, dto);
+    return this.demandsService.update(id, dto, request.user.role);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
