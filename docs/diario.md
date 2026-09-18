@@ -1417,3 +1417,130 @@ Implementado o controle de autorização para alteração da urgência das deman
 O controle de urgência foi implementado sem interferir na edição normal das demandas.
 
 **Próximo foco:** histórico das alterações estruturais da demanda.
+
+---
+
+## 2026-09-17
+
+### BL-03.6 — Integração do histórico com alterações estruturais
+
+#### Objetivo
+
+Consolidar o histórico estrutural das demandas, registrando automaticamente as principais alterações realizadas e identificando o usuário responsável pela execução de cada ação.
+
+#### Implementações
+
+Foram realizadas as seguintes evoluções no histórico de Demand:
+
+- criação do enum persistente `DemandHistoryType`;
+- definição dos eventos:
+  - `URGENCY_CHANGED`;
+  - `STATUS_CHANGED`;
+  - `RESPONSIBLE_ASSIGNED`;
+  - `RESPONSIBLE_CHANGED`;
+  - `RESPONSIBLE_REMOVED`;
+  - `CLOSED`;
+  - `ARCHIVED`;
+- inclusão do campo `actorId` em `DemandHistory`;
+- criação da relação `DemandHistory.actor` com `User`;
+- criação da relação inversa `User.demandHistoryActions`;
+- definição de `ON DELETE SET NULL` para a relação com o ator;
+- criação de índice sobre `actorId`;
+- propagação do usuário autenticado para as operações estruturais;
+- integração do histórico às alterações de urgência, status, responsável, fechamento e arquivamento;
+- inclusão dos dados públicos do ator no retorno da consulta da demanda.
+
+#### Persistência
+
+Foram criadas e aplicadas as migrations:
+
+`20260917010344_add_demand_history_type`
+
+`20260917221419_add_demand_history_actor`
+
+O schema Prisma foi regenerado e o estado das migrations foi validado no container.
+
+Resultado:
+
+`Database schema is up to date!`
+
+#### Regras de histórico
+
+A alteração de urgência passou a gerar `URGENCY_CHANGED` somente quando o valor efetivamente é modificado.
+
+A alteração de status gera `STATUS_CHANGED` com o usuário autenticado como ator.
+
+As operações de responsável passaram a registrar:
+
+- `RESPONSIBLE_ASSIGNED` para atribuição;
+- `RESPONSIBLE_CHANGED` para troca;
+- `RESPONSIBLE_REMOVED` para remoção.
+
+Operações sem alteração efetiva não geram novos eventos.
+
+As operações de fechamento e arquivamento passaram a registrar, respectivamente:
+
+- `CLOSED`;
+- `ARCHIVED`.
+
+#### Identificação do ator
+
+Cada novo evento estrutural recebe o `actorId` do usuário autenticado que executou a operação.
+
+A consulta individual da demanda passou a retornar também os dados públicos do ator associado ao evento:
+
+- `id`;
+- `name`;
+- `email`;
+- `role`.
+
+Registros históricos criados antes da introdução de `actorId` permanecem com `actorId = null`, pois não existe informação confiável para determinar retroativamente qual usuário realizou essas ações.
+
+#### Validação funcional
+
+Foram executados cenários consolidados utilizando a demanda de validação `DEM-000013`.
+
+Foram validados com sucesso:
+
+- `BAIXA → ALTA` gerando `URGENCY_CHANGED`;
+- `NOVA → TRIAGEM` gerando `STATUS_CHANGED`;
+- fechamento gerando `CLOSED`;
+- arquivamento gerando `ARCHIVED`;
+- atribuição de responsável gerando `RESPONSIBLE_ASSIGNED`;
+- troca de responsável gerando `RESPONSIBLE_CHANGED`;
+- remoção de responsável gerando `RESPONSIBLE_REMOVED`;
+- retorno do `actorId` correto;
+- retorno do objeto `actor` com os dados do usuário responsável pela ação;
+- ausência de novo evento em operações sem alteração efetiva.
+
+Os eventos gerados nas novas operações apresentaram o ator esperado, incluindo o usuário `ADMIN` utilizado nos cenários consolidados.
+
+#### Validação técnica
+
+Foram executados com sucesso:
+
+- `docker compose exec backend npx prisma generate`;
+- `docker compose exec backend npx prisma migrate status`;
+- `docker compose exec backend npx eslint src`;
+- `docker compose exec backend npm run build`;
+- `git diff --check`.
+
+Todos os comandos foram concluídos sem erros.
+
+#### Resultado
+
+O BL-03.6 foi concluído com sucesso.
+
+O histórico de Demand está agora integrado às principais alterações estruturais do domínio e registra o ator responsável pelas novas ações.
+
+A consulta da demanda também permite identificar quem executou cada alteração, mantendo os dados públicos do usuário associados ao evento.
+
+A consolidação do histórico foi realizada sem atribuir atores artificialmente aos registros legados.
+
+#### Observação sobre fechamento e arquivamento
+
+A implementação atual registra os eventos `CLOSED` e `ARCHIVED`, porém a semântica definitiva do estado `CLOSED` ainda não está consolidada no domínio.
+
+Os endpoints legados `/close` e `/archive` permanecem preservados e podem produzir combinações entre `status`, `closedAt` e `archived` que serão tratadas no próximo incremento de ciclo de vida.
+
+A próxima evolução deverá introduzir a convergência explícita do fechamento e arquivamento com o estado `CLOSED`, incluindo a distinção entre conclusão sinalizada, fechamento validado e arquivamento.

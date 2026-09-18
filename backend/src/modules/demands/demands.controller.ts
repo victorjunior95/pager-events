@@ -61,21 +61,32 @@ export class DemandsController {
     @Body() dto: UpdateDemandDto,
     @Req() request: AuthenticatedRequest,
   ) {
-    return this.demandsService.update(id, dto, request.user.role);
+    return this.demandsService.update(
+      id,
+      dto,
+      request.user.id,
+      request.user.role,
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF)
   @Patch(':id/close')
-  close(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.demandsService.close(id);
+  close(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.demandsService.close(id, request.user.id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MANAGER)
   @Patch(':id/archive')
-  archive(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.demandsService.archive(id);
+  archive(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.demandsService.archive(id, request.user.id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -84,15 +95,23 @@ export class DemandsController {
   assignResponsible(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: AssignDemandResponsibleDto,
+    @Req() request: AuthenticatedRequest,
   ) {
-    return this.demandsService.assignResponsible(id, dto.responsibleId);
+    return this.demandsService.assignResponsible(
+      id,
+      dto.responsibleId,
+      request.user.id,
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MANAGER)
   @Delete(':id/responsible')
-  removeResponsible(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.demandsService.removeResponsible(id);
+  removeResponsible(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.demandsService.removeResponsible(id, request.user.id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

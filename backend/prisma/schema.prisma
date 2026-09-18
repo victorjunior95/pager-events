@@ -42,6 +42,16 @@ enum DemandStatus {
   ARQUIVADA
 }
 
+enum DemandHistoryType {
+  URGENCY_CHANGED
+  STATUS_CHANGED
+  RESPONSIBLE_ASSIGNED
+  RESPONSIBLE_CHANGED
+  RESPONSIBLE_REMOVED
+  CLOSED
+  ARCHIVED
+}
+
 model User {
   id           String   @id @default(uuid())
   name         String
@@ -52,8 +62,9 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  areas              UserArea[]
-  responsibleDemands Demand[]   @relation("DemandResponsible")
+  areas                UserArea[]
+  responsibleDemands   Demand[]        @relation("DemandResponsible")
+  demandHistoryActions DemandHistory[] @relation("DemandHistoryActor")
 
   @@map("users")
 }
@@ -124,12 +135,17 @@ model DemandArea {
 }
 
 model DemandHistory {
-  id        String   @id @default(uuid())
+  id        String            @id @default(uuid())
   demandId  String
-  createdAt DateTime @default(now())
+  actorId   String?
+  type      DemandHistoryType
+  createdAt DateTime          @default(now())
 
   demand Demand @relation(fields: [demandId], references: [id], onDelete: Cascade)
+  actor  User?  @relation("DemandHistoryActor", fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([demandId, createdAt])
+  @@index([type])
+  @@index([actorId])
   @@map("demand_history")
 }

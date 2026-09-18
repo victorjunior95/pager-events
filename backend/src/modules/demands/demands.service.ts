@@ -20,6 +20,15 @@ const ALLOWED_NEXT_STATUS: Record<DemandStatusDto, DemandStatusDto | null> = {
   [DemandStatusDto.ARQUIVADA]: null,
 };
 
+type DemandHistoryEventType =
+  | 'URGENCY_CHANGED'
+  | 'STATUS_CHANGED'
+  | 'RESPONSIBLE_ASSIGNED'
+  | 'RESPONSIBLE_CHANGED'
+  | 'RESPONSIBLE_REMOVED'
+  | 'CLOSED'
+  | 'ARCHIVED';
+
 @Injectable()
 export class DemandsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -95,6 +104,16 @@ export class DemandsService {
           orderBy: {
             createdAt: 'desc',
           },
+          include: {
+            actor: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
         },
         responsible: {
           select: {
@@ -115,11 +134,18 @@ export class DemandsService {
     return demand;
   }
 
-  async update(id: string, dto: UpdateDemandDto, actorRole: UserRole) {
+  async update(
+    id: string,
+    dto: UpdateDemandDto,
+    actorId: string,
+    actorRole: UserRole,
+  ) {
     const demand = await this.prisma.demand.findUnique({
       where: { id },
       select: {
         id: true,
+        urgency: true,
+        responsibleId: true,
         archived: true,
         closedAt: true,
       },
@@ -161,6 +187,25 @@ export class DemandsService {
       await this.validateAreas(dto.areaIds);
     }
 
+    const urgencyChanged =
+      dto.urgency !== undefined &&
+      (dto.urgency as DemandUrgency) !== demand.urgency;
+
+    let responsibleHistoryType: DemandHistoryEventType | null = null;
+
+    if (
+      dto.responsibleId !== undefined &&
+      dto.responsibleId !== demand.responsibleId
+    ) {
+      if (demand.responsibleId === null && dto.responsibleId !== null) {
+        responsibleHistoryType = 'RESPONSIBLE_ASSIGNED';
+      } else if (demand.responsibleId !== null && dto.responsibleId === null) {
+        responsibleHistoryType = 'RESPONSIBLE_REMOVED';
+      } else {
+        responsibleHistoryType = 'RESPONSIBLE_CHANGED';
+      }
+    }
+
     const data: Prisma.DemandUpdateInput = {
       title: dto.title,
       description: dto.description,
@@ -191,7 +236,7 @@ export class DemandsService {
           };
     }
 
-    return this.prisma.demand.update({
+    const updatedDemand = await this.prisma.demand.update({
       where: { id },
       data,
       include: {
@@ -211,9 +256,19 @@ export class DemandsService {
         },
       },
     });
+
+    if (urgencyChanged) {
+      await this.createHistory(id, 'URGENCY_CHANGED', actorId);
+    }
+
+    if (responsibleHistoryType !== null) {
+      await this.createHistory(id, responsibleHistoryType, actorId);
+    }
+
+    return updatedDemand;
   }
 
-  async close(id: string) {
+  async close(id: string, actorId: string) {
     const demand = await this.prisma.demand.findUnique({
       where: { id },
       select: {
@@ -237,7 +292,7 @@ export class DemandsService {
       throw new BadRequestException('A demanda já está fechada.');
     }
 
-    return this.prisma.demand.update({
+    const updatedDemand = await this.prisma.demand.update({
       where: { id },
       data: {
         closedAt: new Date(),
@@ -250,9 +305,13 @@ export class DemandsService {
         },
       },
     });
+
+    await this.createHistory(id, 'CLOSED', actorId);
+
+    return updatedDemand;
   }
 
-  async archive(id: string) {
+  async archive(id: string, actorId: string) {
     const demand = await this.prisma.demand.findUnique({
       where: { id },
       select: {
@@ -276,7 +335,7 @@ export class DemandsService {
       );
     }
 
-    return this.prisma.demand.update({
+    const updatedDemand = await this.prisma.demand.update({
       where: { id },
       data: {
         archived: true,
@@ -289,15 +348,20 @@ export class DemandsService {
         },
       },
     });
+
+    await this.createHistory(id, 'ARCHIVED', actorId);
+
+    return updatedDemand;
   }
 
-  async removeResponsible(demandId: string) {
+  async removeResponsible(demandId: string, actorId: string) {
     const demand = await this.prisma.demand.findUnique({
       where: { id: demandId },
       select: {
         id: true,
         closedAt: true,
         archived: true,
+        responsibleId: true,
       },
     });
 
@@ -317,7 +381,7 @@ export class DemandsService {
       );
     }
 
-    return this.prisma.demand.update({
+    const updatedDemand = await this.prisma.demand.update({
       where: { id: demandId },
       data: {
         responsible: {
@@ -341,15 +405,26 @@ export class DemandsService {
         },
       },
     });
+
+    if (demand.responsibleId !== null) {
+      await this.createHistory(demandId, 'RESPONSIBLE_REMOVED', actorId);
+    }
+
+    return updatedDemand;
   }
 
-  async assignResponsible(demandId: string, responsibleId: string) {
+  async assignResponsible(
+    demandId: string,
+    responsibleId: string,
+    actorId: string,
+  ) {
     const demand = await this.prisma.demand.findUnique({
       where: { id: demandId },
       select: {
         id: true,
         closedAt: true,
         archived: true,
+        responsibleId: true,
       },
     });
 
@@ -385,7 +460,7 @@ export class DemandsService {
       throw new ForbiddenException('O usuário responsável está desativado.');
     }
 
-    return this.prisma.demand.update({
+    const updatedDemand = await this.prisma.demand.update({
       where: { id: demandId },
       data: {
         responsibleId: user.id,
@@ -407,49 +482,17 @@ export class DemandsService {
         },
       },
     });
-  }
 
-  private async validateAreas(areaIds: string[]) {
-    if (areaIds.length === 0) {
-      throw new BadRequestException(
-        'A demanda deve possuir pelo menos uma área.',
-      );
+    if (demand.responsibleId !== user.id) {
+      const historyType =
+        demand.responsibleId === null
+          ? 'RESPONSIBLE_ASSIGNED'
+          : 'RESPONSIBLE_CHANGED';
+
+      await this.createHistory(demandId, historyType, actorId);
     }
 
-    const areas = await this.prisma.area.findMany({
-      where: {
-        id: {
-          in: areaIds,
-        },
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (areas.length !== new Set(areaIds).size) {
-      throw new BadRequestException(
-        'Uma ou mais áreas informadas não existem.',
-      );
-    }
-  }
-
-  private async validateResponsible(responsibleId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: responsibleId },
-      select: {
-        id: true,
-        active: true,
-      },
-    });
-
-    if (!user) {
-      throw new BadRequestException('O responsável informado não existe.');
-    }
-
-    if (!user.active) {
-      throw new BadRequestException('O responsável informado está inativo.');
-    }
+    return updatedDemand;
   }
 
   async updateStatus(
@@ -541,7 +584,9 @@ export class DemandsService {
       data.closedAt = demand.closedAt ?? new Date();
     }
 
-    return this.prisma.demand.update({
+    const willClose = status === DemandStatusDto.ARQUIVADA && !demand.closedAt;
+
+    const updatedDemand = await this.prisma.demand.update({
       where: { id },
       data,
       include: {
@@ -561,5 +606,74 @@ export class DemandsService {
         },
       },
     });
+
+    await this.createHistory(id, 'STATUS_CHANGED', actorId);
+
+    if (willClose) {
+      await this.createHistory(id, 'CLOSED', actorId);
+    }
+
+    if (status === DemandStatusDto.ARQUIVADA) {
+      await this.createHistory(id, 'ARCHIVED', actorId);
+    }
+
+    return updatedDemand;
+  }
+
+  private async createHistory(
+    demandId: string,
+    type: DemandHistoryEventType,
+    actorId: string,
+  ) {
+    return this.prisma.demandHistory.create({
+      data: {
+        demandId,
+        type,
+        actorId,
+      },
+    });
+  }
+
+  private async validateAreas(areaIds: string[]) {
+    if (areaIds.length === 0) {
+      throw new BadRequestException(
+        'A demanda deve possuir pelo menos uma área.',
+      );
+    }
+
+    const areas = await this.prisma.area.findMany({
+      where: {
+        id: {
+          in: areaIds,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (areas.length !== new Set(areaIds).size) {
+      throw new BadRequestException(
+        'Uma ou mais áreas informadas não existem.',
+      );
+    }
+  }
+
+  private async validateResponsible(responsibleId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: responsibleId },
+      select: {
+        id: true,
+        active: true,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('O responsável informado não existe.');
+    }
+
+    if (!user.active) {
+      throw new BadRequestException('O responsável informado está inativo.');
+    }
   }
 }

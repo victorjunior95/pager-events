@@ -775,8 +775,9 @@ As operações de gerenciamento do responsável também foram implementadas e va
 * [x] remoção de responsável;
 * [x] definição e implementação do andamento/status operacional;
 * [x] consolidação das regras de alteração de urgência/prioridade;
-* [ ] integração do histórico com as alterações estruturais;
-* [ ] validação consolidada das novas regras do domínio.
+* [x] integração do histórico com as alterações estruturais;
+* [x] validação consolidada das novas regras do domínio;
+* [ ] consolidação do fechamento e arquivamento com status `CLOSED`;
 
 ### BL-03.3 — Gerenciamento do responsável
 
@@ -959,8 +960,84 @@ O domínio de Demand possui agora o gerenciamento completo do responsável opera
 **Observação de compatibilidade:**
 
 Os endpoints legados de `/close` e `/archive` permanecem preservados neste incremento. Eles ainda operam sobre `closedAt` e `archived` sem convergência automática completa com `status`. A consolidação dessas regras fica para um incremento complementar, evitando alteração ampla do comportamento já validado.
+A consolidação futura deverá introduzir o estado explícito `CLOSED`, separando a sinalização de conclusão da confirmação definitiva do fechamento e ajustando a transição para arquivamento.
 
 **Status:** 🟢 Concluído
+
+### BL-03.6 — Integração do histórico com alterações estruturais
+
+**Objetivo:** consolidar o registro automático das principais alterações estruturais da demanda, identificando o usuário responsável pela execução de cada ação.
+
+**Implementação:**
+
+* criação do enum persistente `DemandHistoryType`;
+* inclusão dos eventos:
+  * `URGENCY_CHANGED`;
+  * `STATUS_CHANGED`;
+  * `RESPONSIBLE_ASSIGNED`;
+  * `RESPONSIBLE_CHANGED`;
+  * `RESPONSIBLE_REMOVED`;
+  * `CLOSED`;
+  * `ARCHIVED`;
+* inclusão de `actorId` em `DemandHistory`;
+* criação da relação `DemandHistory.actor` com `User`;
+* criação da relação inversa `User.demandHistoryActions`;
+* utilização de `ON DELETE SET NULL` para preservar o histórico caso o usuário seja removido;
+* criação de índice sobre `actorId`;
+* propagação do usuário autenticado como ator das alterações estruturais;
+* integração do registro de histórico às operações de alteração de urgência, status, responsável, fechamento e arquivamento;
+* inclusão dos dados públicos do ator na consulta individual da demanda;
+* preservação de registros históricos legados sem ator identificado, mantendo `actorId = null`.
+
+**Migrations:**
+
+* `20260917010344_add_demand_history_type`;
+* `20260917221419_add_demand_history_actor`.
+
+**Eventos consolidados:**
+
+| Operação | Evento |
+| -------- | ------ |
+| alteração efetiva de urgência | `URGENCY_CHANGED` |
+| alteração efetiva de status | `STATUS_CHANGED` |
+| atribuição de responsável | `RESPONSIBLE_ASSIGNED` |
+| troca de responsável | `RESPONSIBLE_CHANGED` |
+| remoção de responsável | `RESPONSIBLE_REMOVED` |
+| fechamento | `CLOSED` |
+| arquivamento | `ARCHIVED` |
+
+**Validação funcional:**
+
+* alteração de urgência gerando `URGENCY_CHANGED` com `actorId` correto;
+* alteração de status gerando `STATUS_CHANGED` com `actorId` correto;
+* atribuição de responsável gerando `RESPONSIBLE_ASSIGNED`;
+* troca de responsável gerando `RESPONSIBLE_CHANGED`;
+* remoção de responsável gerando `RESPONSIBLE_REMOVED`;
+* fechamento gerando `CLOSED`;
+* arquivamento gerando `ARCHIVED`;
+* eventos sem alteração efetiva não gerando registros duplicados;
+* retorno do objeto `actor` na consulta da demanda;
+* confirmação dos eventos e respectivos atores diretamente na resposta da API.
+
+**Validação técnica:**
+
+* `docker compose exec backend npx prisma generate` concluído;
+* `docker compose exec backend npx prisma migrate status` retornando `Database schema is up to date!`;
+* `docker compose exec backend npx eslint src` concluído sem erros;
+* `docker compose exec backend npm run build` concluído com sucesso;
+* `git diff --check` concluído sem apontamentos.
+
+**Observação:**
+
+Os registros históricos anteriores à introdução de `actorId` permanecem sem ator identificado (`actorId = null`). Não é realizada atribuição retroativa de usuário para esses registros.
+
+A integração do histórico está concluída, porém a semântica definitiva de `CLOSED` ainda não está consolidada. Os endpoints legados de fechamento e arquivamento permanecem preservados até o incremento específico de convergência do ciclo de vida.
+
+**Status:** 🟢 Concluído
+
+### Próximo incremento
+
+**BL-03.7 — Consolidação do fechamento e arquivamento com status `CLOSED`.**
 
 ### Status do Bloco
 
