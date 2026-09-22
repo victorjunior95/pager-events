@@ -8,16 +8,24 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateDemandDto } from './dto/create-demand.dto';
 import { UpdateDemandDto } from './dto/update-demand.dto';
 import { Prisma } from '../../generated/prisma/client';
-import { UserRole, DemandUrgency } from '../../generated/prisma/enums';
+import {
+  UserRole,
+  DemandUrgency,
+  DemandStatus,
+} from '../../generated/prisma/enums';
 import { DemandStatusDto } from './dto/demand-status.enum';
 
-const ALLOWED_NEXT_STATUS: Record<DemandStatusDto, DemandStatusDto | null> = {
-  [DemandStatusDto.NOVA]: DemandStatusDto.TRIAGEM,
-  [DemandStatusDto.TRIAGEM]: DemandStatusDto.RESPONSAVEL_ATRIBUIDO,
-  [DemandStatusDto.RESPONSAVEL_ATRIBUIDO]: DemandStatusDto.EM_ANDAMENTO,
-  [DemandStatusDto.EM_ANDAMENTO]: DemandStatusDto.CONCLUSAO_SINALIZADA,
-  [DemandStatusDto.CONCLUSAO_SINALIZADA]: DemandStatusDto.ARQUIVADA,
-  [DemandStatusDto.ARQUIVADA]: null,
+const ALLOWED_NEXT_STATUSES: Record<DemandStatusDto, DemandStatusDto[]> = {
+  [DemandStatusDto.NOVA]: [DemandStatusDto.TRIAGEM],
+  [DemandStatusDto.TRIAGEM]: [DemandStatusDto.RESPONSAVEL_ATRIBUIDO],
+  [DemandStatusDto.RESPONSAVEL_ATRIBUIDO]: [DemandStatusDto.EM_ANDAMENTO],
+  [DemandStatusDto.EM_ANDAMENTO]: [DemandStatusDto.CONCLUSAO_SINALIZADA],
+  [DemandStatusDto.CONCLUSAO_SINALIZADA]: [
+    DemandStatusDto.EM_ANDAMENTO,
+    DemandStatusDto.CLOSED,
+  ],
+  [DemandStatusDto.CLOSED]: [DemandStatusDto.ARQUIVADA],
+  [DemandStatusDto.ARQUIVADA]: [],
 };
 
 type DemandHistoryEventType =
@@ -165,24 +173,6 @@ export class DemandsService {
       );
     }
 
-    if (dto.responsibleId !== undefined) {
-      if (demand.archived) {
-        throw new BadRequestException(
-          'Não é possível alterar o responsável de uma demanda arquivada.',
-        );
-      }
-
-      if (demand.closedAt) {
-        throw new BadRequestException(
-          'Não é possível alterar o responsável de uma demanda fechada.',
-        );
-      }
-
-      if (dto.responsibleId !== null) {
-        await this.validateResponsible(dto.responsibleId);
-      }
-    }
-
     if (dto.areaIds !== undefined) {
       await this.validateAreas(dto.areaIds);
     }
@@ -190,21 +180,6 @@ export class DemandsService {
     const urgencyChanged =
       dto.urgency !== undefined &&
       (dto.urgency as DemandUrgency) !== demand.urgency;
-
-    let responsibleHistoryType: DemandHistoryEventType | null = null;
-
-    if (
-      dto.responsibleId !== undefined &&
-      dto.responsibleId !== demand.responsibleId
-    ) {
-      if (demand.responsibleId === null && dto.responsibleId !== null) {
-        responsibleHistoryType = 'RESPONSIBLE_ASSIGNED';
-      } else if (demand.responsibleId !== null && dto.responsibleId === null) {
-        responsibleHistoryType = 'RESPONSIBLE_REMOVED';
-      } else {
-        responsibleHistoryType = 'RESPONSIBLE_CHANGED';
-      }
-    }
 
     const data: Prisma.DemandUpdateInput = {
       title: dto.title,
@@ -222,18 +197,6 @@ export class DemandsService {
           },
         })),
       };
-    }
-
-    if (dto.responsibleId !== undefined) {
-      data.responsible = dto.responsibleId
-        ? {
-            connect: {
-              id: dto.responsibleId,
-            },
-          }
-        : {
-            disconnect: true,
-          };
     }
 
     const updatedDemand = await this.prisma.demand.update({
@@ -259,10 +222,6 @@ export class DemandsService {
 
     if (urgencyChanged) {
       await this.createHistory(id, 'URGENCY_CHANGED', actorId);
-    }
-
-    if (responsibleHistoryType !== null) {
-      await this.createHistory(id, responsibleHistoryType, actorId);
     }
 
     return updatedDemand;
@@ -359,6 +318,7 @@ export class DemandsService {
       where: { id: demandId },
       select: {
         id: true,
+        status: true,
         closedAt: true,
         archived: true,
         responsibleId: true,
@@ -381,12 +341,19 @@ export class DemandsService {
       );
     }
 
+    if (demand.status !== DemandStatus.RESPONSAVEL_ATRIBUIDO) {
+      throw new BadRequestException(
+        'Só é possível remover o responsável de uma demanda em RESPONSAVEL_ATRIBUIDO.',
+      );
+    }
+
     const updatedDemand = await this.prisma.demand.update({
       where: { id: demandId },
       data: {
         responsible: {
           disconnect: true,
         },
+        status: DemandStatus.TRIAGEM,
       },
       include: {
         areas: {
@@ -408,6 +375,8 @@ export class DemandsService {
 
     if (demand.responsibleId !== null) {
       await this.createHistory(demandId, 'RESPONSIBLE_REMOVED', actorId);
+
+      await this.createHistory(demandId, 'STATUS_CHANGED', actorId);
     }
 
     return updatedDemand;
@@ -422,6 +391,7 @@ export class DemandsService {
       where: { id: demandId },
       select: {
         id: true,
+        status: true,
         closedAt: true,
         archived: true,
         responsibleId: true,
@@ -460,10 +430,21 @@ export class DemandsService {
       throw new ForbiddenException('O usuário responsável está desativado.');
     }
 
+    if (demand.status !== DemandStatus.TRIAGEM) {
+      throw new BadRequestException(
+        'Só é possível atribuir responsável a uma demanda em TRIAGEM.',
+      );
+    }
+
+    if (demand.responsibleId !== null) {
+      throw new BadRequestException('A demanda já possui um responsável.');
+    }
+
     const updatedDemand = await this.prisma.demand.update({
       where: { id: demandId },
       data: {
         responsibleId: user.id,
+        status: DemandStatus.RESPONSAVEL_ATRIBUIDO,
       },
       include: {
         areas: {
@@ -483,14 +464,8 @@ export class DemandsService {
       },
     });
 
-    if (demand.responsibleId !== user.id) {
-      const historyType =
-        demand.responsibleId === null
-          ? 'RESPONSIBLE_ASSIGNED'
-          : 'RESPONSIBLE_CHANGED';
-
-      await this.createHistory(demandId, historyType, actorId);
-    }
+    await this.createHistory(demandId, 'RESPONSIBLE_ASSIGNED', actorId);
+    await this.createHistory(demandId, 'STATUS_CHANGED', actorId);
 
     return updatedDemand;
   }
@@ -528,9 +503,9 @@ export class DemandsService {
       );
     }
 
-    const nextStatus = ALLOWED_NEXT_STATUS[currentStatus];
+    const allowedNextStatuses = ALLOWED_NEXT_STATUSES[currentStatus];
 
-    if (nextStatus !== status) {
+    if (!allowedNextStatuses.includes(status)) {
       throw new BadRequestException(
         `Transição de status inválida: ${currentStatus} → ${status}.`,
       );
@@ -567,24 +542,60 @@ export class DemandsService {
       }
     }
 
-    if (status === DemandStatusDto.ARQUIVADA) {
+    if (
+      status === DemandStatusDto.CLOSED ||
+      status === DemandStatusDto.ARQUIVADA
+    ) {
       if (actorRole !== UserRole.ADMIN && actorRole !== UserRole.MANAGER) {
         throw new ForbiddenException(
-          'Somente supervisores podem arquivar a demanda.',
+          'Somente supervisores podem confirmar o fechamento ou arquivar a demanda.',
         );
       }
     }
 
-    const data: Prisma.DemandUpdateInput = {
-      status,
+    if (
+      status === DemandStatusDto.CLOSED &&
+      currentStatus !== DemandStatusDto.CONCLUSAO_SINALIZADA
+    ) {
+      throw new BadRequestException(
+        'A demanda só pode ser fechada após a conclusão ter sido sinalizada.',
+      );
+    }
+
+    if (
+      status === DemandStatusDto.ARQUIVADA &&
+      currentStatus !== DemandStatusDto.CLOSED
+    ) {
+      throw new BadRequestException(
+        'A demanda só pode ser arquivada após o fechamento definitivo.',
+      );
+    }
+
+    const prismaStatusMap: Record<DemandStatusDto, DemandStatus> = {
+      [DemandStatusDto.NOVA]: DemandStatus.NOVA,
+      [DemandStatusDto.TRIAGEM]: DemandStatus.TRIAGEM,
+      [DemandStatusDto.RESPONSAVEL_ATRIBUIDO]:
+        DemandStatus.RESPONSAVEL_ATRIBUIDO,
+      [DemandStatusDto.EM_ANDAMENTO]: DemandStatus.EM_ANDAMENTO,
+      [DemandStatusDto.CONCLUSAO_SINALIZADA]: DemandStatus.CONCLUSAO_SINALIZADA,
+      [DemandStatusDto.CLOSED]: DemandStatus.CLOSED,
+      [DemandStatusDto.ARQUIVADA]: DemandStatus.ARQUIVADA,
     };
+
+    const data: Prisma.DemandUpdateInput = {
+      status: prismaStatusMap[status],
+    };
+
+    if (status === DemandStatusDto.CLOSED) {
+      data.closedAt = new Date();
+    }
 
     if (status === DemandStatusDto.ARQUIVADA) {
       data.archived = true;
       data.closedAt = demand.closedAt ?? new Date();
     }
 
-    const willClose = status === DemandStatusDto.ARQUIVADA && !demand.closedAt;
+    const willClose = status === DemandStatusDto.CLOSED && !demand.closedAt;
 
     const updatedDemand = await this.prisma.demand.update({
       where: { id },

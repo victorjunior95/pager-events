@@ -33,7 +33,7 @@ export class UpdateDemandDto {
   @IsUUID('4', { each: true })
   areaIds?: string[];
 
-  @IsOptional()
-  @IsUUID('4')
-  responsibleId?: string | null;
+  // @IsOptional()
+  // @IsUUID('4')
+  // responsibleId?: string | null;
 }

@@ -1544,3 +1544,132 @@ A implementação atual registra os eventos `CLOSED` e `ARCHIVED`, porém a sem�
 Os endpoints legados `/close` e `/archive` permanecem preservados e podem produzir combinações entre `status`, `closedAt` e `archived` que serão tratadas no próximo incremento de ciclo de vida.
 
 A próxima evolução deverá introduzir a convergência explícita do fechamento e arquivamento com o estado `CLOSED`, incluindo a distinção entre conclusão sinalizada, fechamento validado e arquivamento.
+
+## 2026-09-22
+
+### BL-03.7 — Consolidação do fechamento e arquivamento com status `CLOSED`
+
+#### Objetivo
+
+Consolidar a distinção entre conclusão sinalizada, fechamento definitivo e arquivamento no ciclo de vida das demandas.
+
+#### Implementação
+
+Foi introduzido o estado persistente `CLOSED` na máquina de estados de Demand.
+
+Foram atualizados:
+
+* enum persistente `DemandStatus`;
+* `DemandStatusDto`;
+* mapa de transições válidas;
+* validação de fechamento somente após `CONCLUSAO_SINALIZADA`;
+* validação de arquivamento somente após `CLOSED`;
+* persistência de `closedAt` na transição para `CLOSED`;
+* persistência de `archived = true` na transição para `ARQUIVADA`;
+* registro dos eventos históricos correspondentes.
+
+A máquina de estados passou a representar:
+
+`NOVA → TRIAGEM → RESPONSAVEL_ATRIBUIDO → EM_ANDAMENTO → CONCLUSAO_SINALIZADA → CLOSED → ARQUIVADA`
+
+Também foi mantida a possibilidade de rejeição da conclusão:
+
+`CONCLUSAO_SINALIZADA → EM_ANDAMENTO`
+
+#### Persistência
+
+Foi criada e aplicada a migration:
+
+`20260922150139_add_closed_demand_status`
+
+O Prisma Client foi regenerado e o banco permaneceu sincronizado.
+
+#### Validação técnica
+
+* `docker compose exec backend npm run build` → concluído com sucesso;
+* `docker compose exec backend npx eslint src` → concluído sem erros;
+* `git diff --check` → concluído sem apontamentos.
+
+#### Resultado
+
+O BL-03.7 foi concluído.
+
+O domínio passa a possuir o estado explícito `CLOSED`, separando o fechamento definitivo do arquivamento.
+
+Os endpoints legados de fechamento e arquivamento permanecem preservados para consolidação posterior, conforme previsto no requisito RN043.
+
+### BL-03.8 — Regras de atribuição e início da demanda
+
+#### Objetivo
+
+Consolidar a separação entre atribuição de responsável e início efetivo da execução, fazendo com que essas operações respeitem as condições da máquina de estados.
+
+#### Implementação
+
+A atribuição inicial passou a exigir que a demanda esteja em `TRIAGEM` e ainda não possua responsável.
+
+A atribuição:
+
+`TRIAGEM → RESPONSAVEL_ATRIBUIDO`
+
+passou a ocorrer de forma atômica com a definição do responsável.
+
+A atribuição não inicia a execução da demanda. O início efetivo continua representado por:
+
+`RESPONSAVEL_ATRIBUIDO → EM_ANDAMENTO`
+
+e somente o responsável atual pode realizar essa transição.
+
+A remoção do responsável passou a ser permitida somente em `RESPONSAVEL_ATRIBUIDO`, retornando a demanda para:
+
+`RESPONSAVEL_ATRIBUIDO → TRIAGEM`
+
+Também foi removida a possibilidade de alteração de `responsibleId` pelo `PATCH /api/demands/:id`, evitando que a operação genérica contorne as regras específicas de atribuição.
+
+#### Validação funcional
+
+Foram utilizados os cenários `DEM-000016` e `DEM-000017`.
+
+Foram validados com sucesso:
+
+* atribuição por `ADMIN`: `200 OK`;
+* transição automática para `RESPONSAVEL_ATRIBUIDO`;
+* confirmação de que a atribuição não inicia a execução;
+* segunda atribuição rejeitada com `400 Bad Request`;
+* início pelo responsável atual com `200 OK`;
+* tentativa de início por outro usuário rejeitada com `403 Forbidden`;
+* remoção em `RESPONSAVEL_ATRIBUIDO` com `200 OK`;
+* retorno da demanda para `TRIAGEM` após remoção;
+* tentativa de remoção durante `EM_ANDAMENTO` rejeitada com `400 Bad Request`;
+* tentativa de alterar `responsibleId` pelo `PATCH /:id` rejeitada com `400 Bad Request`;
+* tentativa de atribuição por `STAFF` rejeitada com `403 Forbidden`.
+
+#### Histórico
+
+A atribuição passou a registrar:
+
+* `RESPONSIBLE_ASSIGNED`;
+* `STATUS_CHANGED`.
+
+A remoção passou a registrar:
+
+* `RESPONSIBLE_REMOVED`;
+* `STATUS_CHANGED`.
+
+Os retornos das consultas das demandas confirmaram a persistência dos eventos com o ator autenticado.
+
+#### Validação técnica
+
+* `docker compose exec backend npm run build` → concluído com sucesso;
+* `docker compose exec backend npx eslint src` → concluído sem erros;
+* `git diff --check` → concluído sem apontamentos.
+
+#### Resultado
+
+O BL-03.8 foi concluído.
+
+A atribuição, o início e a remoção do responsável estão agora submetidos às condições explícitas da máquina de estados, sem possibilidade de alteração do responsável pelo fluxo genérico de edição.
+
+#### Próximo incremento
+
+**BL-03.9 — Conclusão, validação e rejeição da demanda.**
