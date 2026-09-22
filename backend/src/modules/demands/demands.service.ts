@@ -35,7 +35,9 @@ type DemandHistoryEventType =
   | 'RESPONSIBLE_CHANGED'
   | 'RESPONSIBLE_REMOVED'
   | 'CLOSED'
-  | 'ARCHIVED';
+  | 'ARCHIVED'
+  | 'COMPLETION_APPROVED'
+  | 'COMPLETION_REJECTED';
 
 @Injectable()
 export class DemandsService {
@@ -470,6 +472,258 @@ export class DemandsService {
     return updatedDemand;
   }
 
+  async signalCompletion(demandId: string, actorId: string) {
+    const demand = await this.prisma.demand.findUnique({
+      where: { id: demandId },
+      select: {
+        id: true,
+        status: true,
+        responsibleId: true,
+        archived: true,
+      },
+    });
+
+    if (!demand) {
+      throw new NotFoundException('Demanda não encontrada.');
+    }
+
+    if (demand.archived) {
+      throw new BadRequestException(
+        'Não é possível sinalizar a conclusão de uma demanda arquivada.',
+      );
+    }
+
+    if (demand.status !== DemandStatus.EM_ANDAMENTO) {
+      throw new BadRequestException(
+        'Só é possível sinalizar a conclusão de uma demanda em EM_ANDAMENTO.',
+      );
+    }
+
+    if (demand.responsibleId !== actorId) {
+      throw new ForbiddenException(
+        'Somente o responsável atual pode sinalizar a conclusão da demanda.',
+      );
+    }
+
+    const responsible = await this.prisma.user.findUnique({
+      where: { id: demand.responsibleId },
+      select: {
+        id: true,
+        role: true,
+      },
+    });
+
+    if (!responsible) {
+      throw new NotFoundException('Usuário responsável não encontrado.');
+    }
+
+    const closesDirectly =
+      responsible.role === UserRole.MANAGER ||
+      responsible.role === UserRole.ADMIN;
+
+    const updatedDemand = await this.prisma.demand.update({
+      where: { id: demandId },
+      data: {
+        status: closesDirectly
+          ? DemandStatus.CLOSED
+          : DemandStatus.CONCLUSAO_SINALIZADA,
+        closedAt: closesDirectly ? new Date() : undefined,
+      },
+      include: {
+        areas: {
+          include: {
+            area: true,
+          },
+        },
+        responsible: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            active: true,
+          },
+        },
+      },
+    });
+
+    await this.createHistory(demandId, 'STATUS_CHANGED', actorId);
+
+    if (closesDirectly) {
+      await this.createHistory(demandId, 'CLOSED', actorId);
+    }
+
+    return updatedDemand;
+  }
+
+  async approveCompletion(demandId: string, actorId: string) {
+    const demand = await this.prisma.demand.findUnique({
+      where: { id: demandId },
+      select: {
+        id: true,
+        status: true,
+        responsibleId: true,
+        archived: true,
+      },
+    });
+
+    if (!demand) {
+      throw new NotFoundException('Demanda não encontrada.');
+    }
+
+    if (demand.archived) {
+      throw new BadRequestException(
+        'Não é possível validar a conclusão de uma demanda arquivada.',
+      );
+    }
+
+    if (demand.status !== DemandStatus.CONCLUSAO_SINALIZADA) {
+      throw new BadRequestException(
+        'Só é possível validar uma conclusão em CONCLUSAO_SINALIZADA.',
+      );
+    }
+
+    if (!demand.responsibleId) {
+      throw new BadRequestException(
+        'A demanda precisa possuir um responsável para validar a conclusão.',
+      );
+    }
+
+    const responsible = await this.prisma.user.findUnique({
+      where: { id: demand.responsibleId },
+      select: {
+        id: true,
+        role: true,
+      },
+    });
+
+    if (!responsible) {
+      throw new NotFoundException('Usuário responsável não encontrado.');
+    }
+
+    if (responsible.role !== UserRole.STAFF) {
+      throw new BadRequestException(
+        'A conclusão de uma demanda de MANAGER ou ADMIN não exige validação adicional.',
+      );
+    }
+
+    if (actorId === responsible.id) {
+      throw new ForbiddenException(
+        'O responsável não pode validar a própria conclusão.',
+      );
+    }
+
+    const updatedDemand = await this.prisma.demand.update({
+      where: { id: demandId },
+      data: {
+        status: DemandStatus.CLOSED,
+        closedAt: new Date(),
+      },
+      include: {
+        areas: {
+          include: {
+            area: true,
+          },
+        },
+        responsible: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            active: true,
+          },
+        },
+      },
+    });
+
+    await this.createHistory(demandId, 'COMPLETION_APPROVED', actorId);
+    await this.createHistory(demandId, 'STATUS_CHANGED', actorId);
+    await this.createHistory(demandId, 'CLOSED', actorId);
+
+    return updatedDemand;
+  }
+
+  async rejectCompletion(demandId: string, comment: string, actorId: string) {
+    const demand = await this.prisma.demand.findUnique({
+      where: { id: demandId },
+      select: {
+        id: true,
+        status: true,
+        responsibleId: true,
+        archived: true,
+      },
+    });
+
+    if (!demand) {
+      throw new NotFoundException('Demanda não encontrada.');
+    }
+
+    if (demand.archived) {
+      throw new BadRequestException(
+        'Não é possível rejeitar a conclusão de uma demanda arquivada.',
+      );
+    }
+
+    if (demand.status !== DemandStatus.CONCLUSAO_SINALIZADA) {
+      throw new BadRequestException(
+        'Só é possível rejeitar uma conclusão em CONCLUSAO_SINALIZADA.',
+      );
+    }
+
+    if (!demand.responsibleId) {
+      throw new BadRequestException(
+        'A demanda precisa possuir um responsável para rejeitar a conclusão.',
+      );
+    }
+
+    const responsible = await this.prisma.user.findUnique({
+      where: { id: demand.responsibleId },
+      select: {
+        id: true,
+        role: true,
+      },
+    });
+
+    if (!responsible) {
+      throw new NotFoundException('Usuário responsável não encontrado.');
+    }
+
+    if (responsible.role !== UserRole.STAFF) {
+      throw new BadRequestException(
+        'A conclusão de uma demanda de MANAGER ou ADMIN não pode ser rejeitada por este fluxo.',
+      );
+    }
+
+    const updatedDemand = await this.prisma.demand.update({
+      where: { id: demandId },
+      data: {
+        status: DemandStatus.EM_ANDAMENTO,
+      },
+      include: {
+        areas: {
+          include: {
+            area: true,
+          },
+        },
+        responsible: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            active: true,
+          },
+        },
+      },
+    });
+
+    await this.createHistory(demandId, 'COMPLETION_REJECTED', actorId, comment);
+    await this.createHistory(demandId, 'STATUS_CHANGED', actorId);
+
+    return updatedDemand;
+  }
+
   async updateStatus(
     id: string,
     status: DemandStatusDto,
@@ -500,6 +754,18 @@ export class DemandsService {
     if (demand.archived || currentStatus === DemandStatusDto.ARQUIVADA) {
       throw new BadRequestException(
         'Não é possível alterar o status de uma demanda arquivada.',
+      );
+    }
+
+    if (
+      (currentStatus === DemandStatusDto.EM_ANDAMENTO &&
+        status === DemandStatusDto.CONCLUSAO_SINALIZADA) ||
+      (currentStatus === DemandStatusDto.CONCLUSAO_SINALIZADA &&
+        (status === DemandStatusDto.CLOSED ||
+          status === DemandStatusDto.EM_ANDAMENTO))
+    ) {
+      throw new BadRequestException(
+        'A transição de conclusão deve ser realizada pelos endpoints específicos de conclusão.',
       );
     }
 
@@ -635,12 +901,14 @@ export class DemandsService {
     demandId: string,
     type: DemandHistoryEventType,
     actorId: string,
+    comment?: string,
   ) {
     return this.prisma.demandHistory.create({
       data: {
         demandId,
         type,
         actorId,
+        comment,
       },
     });
   }

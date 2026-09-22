@@ -1673,3 +1673,124 @@ A atribuição, o início e a remoção do responsável estão agora submetidos 
 #### Próximo incremento
 
 **BL-03.9 — Conclusão, validação e rejeição da demanda.**
+
+---
+
+### BL-03.9 — Conclusão, validação e rejeição da demanda
+
+#### Objetivo
+
+Implementar a conclusão operacional da demanda, diferenciando a sinalização de conclusão realizada pelo responsável da validação definitiva realizada por outro usuário autorizado, além de permitir a rejeição da conclusão com justificativa obrigatória.
+
+#### Implementação
+
+Foram implementados os fluxos específicos de conclusão:
+
+* `PATCH /api/demands/:id/completion`;
+* `PATCH /api/demands/:id/completion/approve`;
+* `PATCH /api/demands/:id/completion/reject`.
+
+A sinalização de conclusão passou a respeitar o papel do responsável atual:
+
+* `STAFF` responsável sinaliza a conclusão e move a demanda de `EM_ANDAMENTO` para `CONCLUSAO_SINALIZADA`;
+* `MANAGER` responsável pode confirmar diretamente a conclusão, movendo a demanda para `CLOSED`;
+* `ADMIN` responsável pode confirmar diretamente a conclusão, movendo a demanda para `CLOSED`.
+
+Para demandas em `CONCLUSAO_SINALIZADA` cujo responsável é `STAFF`:
+
+* `MANAGER` ou `ADMIN` pode aprovar a conclusão;
+* a aprovação move a demanda para `CLOSED`;
+* a aprovação registra o evento `COMPLETION_APPROVED`;
+* a aprovação também registra `STATUS_CHANGED` e `CLOSED`.
+
+A rejeição da conclusão:
+
+* é permitida para `MANAGER` ou `ADMIN`;
+* retorna a demanda de `CONCLUSAO_SINALIZADA` para `EM_ANDAMENTO`;
+* exige comentário obrigatório;
+* registra o evento `COMPLETION_REJECTED` com o comentário informado;
+* registra também `STATUS_CHANGED`.
+
+O modelo `DemandHistory` foi evoluído para armazenar comentário opcional associado ao evento histórico.
+
+Também foram adicionados ao enum persistente `DemandHistoryType` os eventos:
+
+* `COMPLETION_APPROVED`;
+* `COMPLETION_REJECTED`.
+
+#### Consolidação das transições de conclusão
+
+O endpoint genérico:
+
+`PATCH /api/demands/:id/status`
+
+deixou de permitir diretamente as transições relacionadas à conclusão:
+
+* `EM_ANDAMENTO → CONCLUSAO_SINALIZADA`;
+* `CONCLUSAO_SINALIZADA → CLOSED`;
+* `CONCLUSAO_SINALIZADA → EM_ANDAMENTO`.
+
+Essas transições devem ocorrer exclusivamente pelos endpoints específicos de conclusão, preservando as regras de autorização, validação e comentário obrigatório da rejeição.
+
+#### Persistência
+
+Foram criadas e aplicadas as migrations:
+
+* `20260922192025_add_completion_history_types`;
+* `20260922193112_add_demand_history_comment`.
+
+O Prisma Client foi regenerado e o banco permaneceu sincronizado.
+
+#### Validação funcional
+
+Foram validados com sucesso:
+
+* `STAFF` responsável sinalizando conclusão → `200 OK`;
+* transição `EM_ANDAMENTO → CONCLUSAO_SINALIZADA`;
+* `STAFF` sem permissão para aprovar a própria conclusão → `403 Forbidden`;
+* `MANAGER` aprovando conclusão de `STAFF` → `200 OK`;
+* transição para `CLOSED`;
+* registro dos eventos `COMPLETION_APPROVED`, `STATUS_CHANGED` e `CLOSED`;
+* `MANAGER` rejeitando conclusão de `STAFF` → `200 OK`;
+* retorno para `EM_ANDAMENTO`;
+* persistência do comentário da rejeição em `COMPLETION_REJECTED`;
+* rejeição sem comentário → `400 Bad Request`;
+* `MANAGER` responsável confirmando diretamente a conclusão → `200 OK`;
+* `ADMIN` responsável confirmando diretamente a conclusão → `200 OK`;
+* fechamento direto por responsável `MANAGER`/`ADMIN` sem necessidade de evento `COMPLETION_APPROVED`.
+
+Também foram validadas as tentativas de contornar os fluxos específicos utilizando `PATCH /api/demands/:id/status`:
+
+* `EM_ANDAMENTO → CONCLUSAO_SINALIZADA` → `400 Bad Request`;
+* `CONCLUSAO_SINALIZADA → CLOSED` → `400 Bad Request`;
+* `CONCLUSAO_SINALIZADA → EM_ANDAMENTO` → `400 Bad Request`.
+
+As três tentativas retornaram a mensagem:
+
+`A transição de conclusão deve ser realizada pelos endpoints específicos de conclusão.`
+
+#### Validação técnica
+
+Foram executados com sucesso:
+
+* `docker compose exec backend npm run build`;
+* `docker compose exec backend npx eslint src`;
+* `git diff --check`.
+
+O build foi concluído sem erros, o ESLint terminou sem apontamentos e o `git diff --check` não apresentou problemas.
+
+#### Resultado
+
+O BL-03.9 foi concluído.
+
+O domínio de Demand possui agora fluxos explícitos para sinalização, validação e rejeição da conclusão, diferenciando a conclusão realizada por `STAFF` daquela realizada diretamente por `MANAGER` ou `ADMIN`.
+
+A rejeição exige justificativa persistida no histórico, e as transições de conclusão não podem mais ser executadas pelo endpoint genérico de alteração de status.
+
+#### Observação
+
+Os endpoints legados `/close` e `/archive` permanecem preservados e ainda deverão ser reconciliados integralmente com a máquina de estados, conforme previsto na RN043.
+
+#### Próximo incremento
+
+**BL-03.9.4 — Convergência dos endpoints legados `/close` e `/archive` com a máquina de estados.**

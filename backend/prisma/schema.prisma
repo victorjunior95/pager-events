@@ -51,6 +51,8 @@ enum DemandHistoryType {
   RESPONSIBLE_REMOVED
   CLOSED
   ARCHIVED
+  COMPLETION_APPROVED
+  COMPLETION_REJECTED
 }
 
 model User {
@@ -140,6 +142,7 @@ model DemandHistory {
   demandId  String
   actorId   String?
   type      DemandHistoryType
+  comment   String?
   createdAt DateTime          @default(now())
 
   demand Demand @relation(fields: [demandId], references: [id], onDelete: Cascade)

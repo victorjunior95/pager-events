@@ -19,6 +19,7 @@ import { UserRole } from '../../generated/prisma/enums';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { AssignDemandResponsibleDto } from './dto/assign-demand-responsible.dto';
 import { UpdateDemandStatusDto } from './dto/update-demand-status.dto';
+import { RejectDemandCompletionDto } from './dto/reject-demand-completion.dto';
 
 interface AuthenticatedRequest {
   user: {
@@ -112,6 +113,40 @@ export class DemandsController {
     @Req() request: AuthenticatedRequest,
   ) {
     return this.demandsService.removeResponsible(id, request.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF)
+  @Patch(':id/completion')
+  signalCompletion(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.demandsService.signalCompletion(id, request.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @Patch(':id/completion/approve')
+  approveCompletion(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.demandsService.approveCompletion(id, request.user.id);
+  }
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @Patch(':id/completion/reject')
+  rejectCompletion(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: RejectDemandCompletionDto,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.demandsService.rejectCompletion(
+      id,
+      dto.comment,
+      request.user.id,
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

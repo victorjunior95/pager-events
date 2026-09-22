@@ -782,6 +782,13 @@ As operações de gerenciamento do responsável também foram implementadas e va
 * [x] restrição do início ao responsável atual;
 * [x] retorno para TRIAGEM após remoção do responsável;
 * [x] bloqueio de alteração de responsável pelo PATCH genérico;
+* [x] sinalização de conclusão pelo responsável;
+* [x] validação da conclusão de demandas executadas por STAFF;
+* [x] rejeição de conclusão com comentário obrigatório;
+* [x] conclusão direta por responsável MANAGER ou ADMIN;
+* [x] integração dos eventos de aprovação e rejeição ao histórico;
+* [x] bloqueio das transições de conclusão pelo PATCH genérico;
+* [ ] convergência dos endpoints legados `/close` e `/archive`;
 
 ### BL-03.3 — Gerenciamento do responsável
 
@@ -921,8 +928,6 @@ O BL-03.3 foi concluído com sucesso.
 
 O domínio de Demand possui agora o gerenciamento completo do responsável operacional, incluindo atribuição, troca e remoção, com autorização por perfil, validação do estado do usuário e restrições de ciclo de vida.
 
-**Próximo incremento:** BL-03.4 — Status/Andamento operacional.
-
 ### Status
 
 🟢 Concluído
@@ -1039,10 +1044,6 @@ A integração do histórico está concluída, porém a semântica definitiva de
 
 **Status:** 🟢 Concluído
 
-### Próximo incremento
-
-**BL-03.7 — Consolidação do fechamento e arquivamento com status `CLOSED`.**
-
 ### BL-03.7 — Consolidação do fechamento e arquivamento com status `CLOSED`
 
 #### Objetivo
@@ -1084,8 +1085,6 @@ O Prisma Client foi regenerado e o banco permaneceu sincronizado com o schema.
 O BL-03.7 foi concluído.
 
 O domínio passa a representar explicitamente o fechamento definitivo por meio do estado `CLOSED`, mantendo `ARQUIVADA` como etapa posterior de arquivamento.
-
-**Próximo incremento:** BL-03.8 — Regras de atribuição e início da demanda.
 
 ### BL-03.8 — Regras de atribuição e início da demanda
 
@@ -1142,9 +1141,85 @@ A atribuição do responsável está agora explicitamente separada do início da
 
 🟢 Concluído
 
+### BL-03.9 — Conclusão, validação e rejeição da demanda
+
+#### Objetivo
+
+Implementar o fluxo explícito de conclusão da demanda, diferenciando a sinalização realizada pelo responsável, a validação da conclusão de demandas executadas por `STAFF` e a rejeição com justificativa obrigatória.
+
+#### Implementação
+
+* criação do endpoint `PATCH /api/demands/:id/completion`;
+* criação do endpoint `PATCH /api/demands/:id/completion/approve`;
+* criação do endpoint `PATCH /api/demands/:id/completion/reject`;
+* sinalização de conclusão pelo responsável atual;
+* transição `EM_ANDAMENTO → CONCLUSAO_SINALIZADA` para responsável `STAFF`;
+* confirmação direta para responsável `MANAGER`;
+* confirmação direta para responsável `ADMIN`;
+* aprovação da conclusão de `STAFF` por `MANAGER` ou `ADMIN`;
+* rejeição da conclusão por `MANAGER` ou `ADMIN`;
+* retorno para `EM_ANDAMENTO` após rejeição;
+* exigência de comentário obrigatório na rejeição;
+* registro dos eventos `COMPLETION_APPROVED` e `COMPLETION_REJECTED`;
+* inclusão de comentário opcional em `DemandHistory`;
+* persistência dos comentários associados aos eventos de histórico;
+* bloqueio das transições de conclusão pelo endpoint genérico `PATCH /api/demands/:id/status`.
+
+#### Regras consolidadas
+
+* somente o responsável atual pode sinalizar a conclusão;
+* `STAFF` não confirma definitivamente a própria conclusão;
+* conclusão sinalizada por `STAFF` exige aprovação de `MANAGER` ou `ADMIN`;
+* responsável `MANAGER` pode concluir diretamente;
+* responsável `ADMIN` pode concluir diretamente;
+* rejeição retorna a demanda para `EM_ANDAMENTO`;
+* rejeição exige comentário;
+* `CLOSED` representa o fechamento definitivo;
+* as transições de conclusão não podem ser executadas diretamente pelo endpoint genérico de status.
+
+#### Validação funcional
+
+* sinalização por `STAFF`: `200 OK`;
+* tentativa de aprovação pelo próprio `STAFF`: `403 Forbidden`;
+* aprovação por `MANAGER`: `200 OK`;
+* rejeição por `MANAGER`: `200 OK`;
+* rejeição sem comentário: `400 Bad Request`;
+* conclusão direta por `MANAGER` responsável: `200 OK`;
+* conclusão direta por `ADMIN` responsável: `200 OK`;
+* tentativa de `EM_ANDAMENTO → CONCLUSAO_SINALIZADA` via `/status`: `400 Bad Request`;
+* tentativa de `CONCLUSAO_SINALIZADA → CLOSED` via `/status`: `400 Bad Request`;
+* tentativa de `CONCLUSAO_SINALIZADA → EM_ANDAMENTO` via `/status`: `400 Bad Request`.
+
+#### Persistência
+
+Migrations:
+
+* `20260922192025_add_completion_history_types`;
+* `20260922193112_add_demand_history_comment`.
+
+#### Validação técnica
+
+* `docker compose exec backend npm run build`: concluído com sucesso;
+* `docker compose exec backend npx eslint src`: concluído sem erros;
+* `git diff --check`: concluído sem apontamentos.
+
+#### Resultado
+
+O BL-03.9 foi concluído.
+
+O fluxo de conclusão da demanda está agora separado em sinalização, validação e rejeição, com regras específicas por papel e justificativa obrigatória para rejeições.
+
+O endpoint genérico de status não pode mais contornar essas regras.
+
+#### Pendência
+
+Os endpoints legados `/close` e `/archive` ainda precisam ser reconciliados integralmente com a máquina de estados, conforme previsto na RN043.
+
+**Status:** 🟢 Concluído
+
 ### Próximo incremento
 
-**BL-03.9 — Conclusão, validação e rejeição da demanda.**
+**BL-03.9.4 — Convergência dos endpoints legados `/close` e `/archive` com a máquina de estados.**
 
 ### Status do Bloco
 
