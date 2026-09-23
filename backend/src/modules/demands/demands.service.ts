@@ -234,6 +234,7 @@ export class DemandsService {
       where: { id },
       select: {
         id: true,
+        status: true,
         closedAt: true,
         archived: true,
       },
@@ -249,13 +250,20 @@ export class DemandsService {
       );
     }
 
-    if (demand.closedAt) {
+    if (demand.status === DemandStatus.CLOSED || demand.closedAt) {
       throw new BadRequestException('A demanda já está fechada.');
+    }
+
+    if (demand.status !== DemandStatus.CONCLUSAO_SINALIZADA) {
+      throw new BadRequestException(
+        'A demanda deve estar com conclusão sinalizada para ser fechada.',
+      );
     }
 
     const updatedDemand = await this.prisma.demand.update({
       where: { id },
       data: {
+        status: DemandStatus.CLOSED,
         closedAt: new Date(),
       },
       include: {
@@ -267,6 +275,7 @@ export class DemandsService {
       },
     });
 
+    await this.createHistory(id, 'STATUS_CHANGED', actorId);
     await this.createHistory(id, 'CLOSED', actorId);
 
     return updatedDemand;
@@ -277,6 +286,7 @@ export class DemandsService {
       where: { id },
       select: {
         id: true,
+        status: true,
         closedAt: true,
         archived: true,
       },
@@ -286,11 +296,11 @@ export class DemandsService {
       throw new NotFoundException('Demanda não encontrada.');
     }
 
-    if (demand.archived) {
+    if (demand.archived || demand.status === DemandStatus.ARQUIVADA) {
       throw new BadRequestException('A demanda já está arquivada.');
     }
 
-    if (!demand.closedAt) {
+    if (demand.status !== DemandStatus.CLOSED) {
       throw new BadRequestException(
         'Não é possível arquivar uma demanda que não está fechada.',
       );
@@ -299,6 +309,7 @@ export class DemandsService {
     const updatedDemand = await this.prisma.demand.update({
       where: { id },
       data: {
+        status: DemandStatus.ARQUIVADA,
         archived: true,
       },
       include: {
@@ -310,6 +321,7 @@ export class DemandsService {
       },
     });
 
+    await this.createHistory(id, 'STATUS_CHANGED', actorId);
     await this.createHistory(id, 'ARCHIVED', actorId);
 
     return updatedDemand;

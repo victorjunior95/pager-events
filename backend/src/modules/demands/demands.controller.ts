@@ -71,7 +71,7 @@ export class DemandsController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
   @Patch(':id/close')
   close(
     @Param('id', new ParseUUIDPipe()) id: string,

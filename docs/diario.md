@@ -1794,3 +1794,103 @@ Os endpoints legados `/close` e `/archive` permanecem preservados e ainda dever�
 #### Próximo incremento
 
 **BL-03.9.4 — Convergência dos endpoints legados `/close` e `/archive` com a máquina de estados.**
+
+## 2026-09-23
+
+### BL-03.9.4 — Convergência dos endpoints legados `/close` e `/archive`
+
+#### Objetivo
+
+Convergir os endpoints legados de fechamento e arquivamento com a máquina de estados consolidada do domínio de Demand, evitando combinações incompatíveis entre `status`, `closedAt` e `archived`.
+
+#### Implementação
+
+Foram ajustados os endpoints legados:
+
+* `PATCH /api/demands/:id/close`;
+* `PATCH /api/demands/:id/archive`.
+
+O endpoint `/close` passou a:
+
+* aceitar somente usuários `ADMIN` e `MANAGER`;
+* rejeitar demandas arquivadas;
+* rejeitar demandas já fechadas;
+* exigir o estado `CONCLUSAO_SINALIZADA`;
+* alterar o status para `CLOSED`;
+* preencher `closedAt`;
+* registrar `STATUS_CHANGED`;
+* registrar `CLOSED`.
+
+O endpoint `/archive` passou a:
+
+* rejeitar demandas já arquivadas;
+* exigir o estado `CLOSED`;
+* alterar o status para `ARQUIVADA`;
+* definir `archived = true`;
+* preservar o `closedAt` existente;
+* registrar `STATUS_CHANGED`;
+* registrar `ARCHIVED`.
+
+Nenhuma migration foi necessária neste incremento.
+
+#### Validação funcional
+
+Foram validados com sucesso:
+
+* `/close` por `MANAGER` em `CONCLUSAO_SINALIZADA` → `200 OK`;
+* transição `CONCLUSAO_SINALIZADA → CLOSED`;
+* preenchimento de `closedAt`;
+* manutenção de `archived = false` após o fechamento;
+* registro dos eventos `STATUS_CHANGED` e `CLOSED`;
+* `/archive` por `MANAGER` em `CLOSED` → `200 OK`;
+* transição `CLOSED → ARQUIVADA`;
+* definição de `archived = true`;
+* preservação de `closedAt`;
+* registro dos eventos `STATUS_CHANGED` e `ARCHIVED`;
+* tentativa de `/close` por `STAFF` → `403 Forbidden`;
+* tentativa de `/close` em `EM_ANDAMENTO` → `400 Bad Request`;
+* tentativa de `/close` em `CLOSED` → `400 Bad Request`;
+* tentativa de `/archive` em `EM_ANDAMENTO` → `400 Bad Request`;
+* tentativa de `/archive` em `CONCLUSAO_SINALIZADA` → `400 Bad Request`;
+* tentativa de `/archive` em `ARQUIVADA` → `400 Bad Request`.
+
+O cenário de arquivamento em `CONCLUSAO_SINALIZADA` foi validado utilizando a demanda `DEM-000017`, após nova sinalização de conclusão, confirmando que o endpoint legado não permite o salto direto para arquivamento.
+
+#### Invariantes validados
+
+O fluxo passou a preservar as seguintes combinações:
+
+* demanda `CLOSED` possui `closedAt` preenchido e `archived = false`;
+* demanda `ARQUIVADA` possui `closedAt` preenchido e `archived = true`;
+* arquivamento somente ocorre após `CLOSED`;
+* demanda arquivada não pode ser novamente fechada ou arquivada.
+
+#### Validação técnica
+
+Foram executados:
+
+* `docker compose exec backend npm run build`;
+* `docker compose exec backend npx prisma migrate status`;
+* `docker compose exec backend npx eslint src`;
+* `git diff --check`;
+* revisão do diff dos arquivos `demands.controller.ts` e `demands.service.ts`.
+
+Todos os comandos foram concluídos sem erros e nenhuma migration adicional foi necessária.
+
+#### Resultado
+
+O BL-03.9.4 foi concluído.
+
+Os endpoints legados `/close` e `/archive` passaram a respeitar a máquina de estados consolidada, mantendo coerência entre `status`, `closedAt` e `archived`.
+
+A convergência atende à pendência identificada anteriormente para a RN043 e elimina a possibilidade de utilização dos endpoints legados para produzir combinações incompatíveis com o ciclo de vida atual da demanda.
+
+#### Resultado do Bloco 3
+
+Com a conclusão deste incremento, todos os itens previstos para o ciclo de vida de Demand foram implementados e validados, incluindo atribuição, início da execução, conclusão, validação, rejeição, fechamento definitivo e arquivamento.
+
+O Bloco 3 pode ser marcado como concluído após a validação técnica final e versionamento das alterações.
+
+#### Próximo incremento
+
+O próximo ciclo deverá avançar para o **Bloco 4 — Comunicação**, conforme dependências estabelecidas no roadmap.

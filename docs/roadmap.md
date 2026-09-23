@@ -788,7 +788,7 @@ As operações de gerenciamento do responsável também foram implementadas e va
 * [x] conclusão direta por responsável MANAGER ou ADMIN;
 * [x] integração dos eventos de aprovação e rejeição ao histórico;
 * [x] bloqueio das transições de conclusão pelo PATCH genérico;
-* [ ] convergência dos endpoints legados `/close` e `/archive`;
+* [x] convergência dos endpoints legados `/close` e `/archive`;
 
 ### BL-03.3 — Gerenciamento do responsável
 
@@ -1217,13 +1217,92 @@ Os endpoints legados `/close` e `/archive` ainda precisam ser reconciliados inte
 
 **Status:** 🟢 Concluído
 
-### Próximo incremento
+### BL-03.9.4 — Convergência dos endpoints legados `/close` e `/archive`
 
-**BL-03.9.4 — Convergência dos endpoints legados `/close` e `/archive` com a máquina de estados.**
+#### Objetivo
+
+Convergir os endpoints legados de fechamento e arquivamento com a máquina de estados consolidada de Demand, garantindo coerência entre `status`, `closedAt` e `archived`.
+
+#### Implementação
+
+* restrição do endpoint `PATCH /api/demands/:id/close` aos papéis `ADMIN` e `MANAGER`;
+* exigência de `CONCLUSAO_SINALIZADA` para fechamento pelo endpoint legado;
+* transição explícita `CONCLUSAO_SINALIZADA → CLOSED`;
+* preenchimento de `closedAt` durante o fechamento;
+* bloqueio de fechamento de demandas arquivadas ou já fechadas;
+* exigência de `CLOSED` para arquivamento;
+* transição explícita `CLOSED → ARQUIVADA`;
+* definição de `archived = true` durante o arquivamento;
+* preservação de `closedAt` durante o arquivamento;
+* registro de `STATUS_CHANGED` e `CLOSED` no fechamento;
+* registro de `STATUS_CHANGED` e `ARCHIVED` no arquivamento;
+* nenhuma migration adicional.
+
+#### Validação funcional
+
+* `/close` em `CONCLUSAO_SINALIZADA`: `200 OK`;
+* `/archive` em `CLOSED`: `200 OK`;
+* `STAFF` executando `/close`: `403 Forbidden`;
+* `/close` em `EM_ANDAMENTO`: `400 Bad Request`;
+* `/close` em `CLOSED`: `400 Bad Request`;
+* `/archive` em `EM_ANDAMENTO`: `400 Bad Request`;
+* `/archive` em `CONCLUSAO_SINALIZADA`: `400 Bad Request`;
+* `/archive` em `ARQUIVADA`: `400 Bad Request`;
+* histórico de fechamento confirmado com `STATUS_CHANGED` + `CLOSED`;
+* histórico de arquivamento confirmado com `STATUS_CHANGED` + `ARCHIVED`;
+* coerência confirmada entre `status`, `closedAt` e `archived`.
+
+#### Validação técnica
+
+* `docker compose exec backend npm run build` → concluído com sucesso;
+* `docker compose exec backend npx prisma migrate status` → schema sincronizado;
+* `docker compose exec backend npx eslint src` → concluído sem erros;
+* `git diff --check` → concluído sem apontamentos.
+
+#### Resultado
+
+**Status:** 🟢 Concluído
+
+A implementação elimina a divergência entre os endpoints legados e a máquina de estados atual, atendendo à RN043.
+
+---
+
+### Status consolidado do Bloco 3 — Demandas
+
+**Status:** 🟢 Concluído
+
+Incrementos concluídos:
+
+* [x] modelagem e CRUD de demandas;
+* [x] autenticação e autorização das operações de demanda;
+* [x] atribuição de responsável;
+* [x] troca de responsável;
+* [x] remoção de responsável;
+* [x] definição e implementação do andamento/status operacional;
+* [x] controle de urgência/prioridade;
+* [x] integração do histórico às alterações estruturais;
+* [x] consolidação do fechamento com status `CLOSED`;
+* [x] separação entre atribuição e início da execução;
+* [x] restrição do início ao responsável atual;
+* [x] retorno para `TRIAGEM` após remoção do responsável;
+* [x] bloqueio de alteração de responsável pelo PATCH genérico;
+* [x] sinalização de conclusão pelo responsável;
+* [x] validação da conclusão de demandas executadas por `STAFF`;
+* [x] rejeição de conclusão com comentário obrigatório;
+* [x] conclusão direta por responsável `MANAGER` ou `ADMIN`;
+* [x] integração dos eventos de aprovação e rejeição ao histórico;
+* [x] bloqueio das transições de conclusão pelo PATCH genérico;
+* [x] convergência dos endpoints legados `/close` e `/archive`.
+
+### Próximo bloco
+
+**Bloco 4 — Comunicação**
+
+O Bloco 4 passa a ser o próximo ciclo de desenvolvimento, conforme a dependência estabelecida no roadmap.
 
 ### Status do Bloco
 
-🟡 Em andamento
+🟢 Concluído
 
 ---
 
